@@ -243,28 +243,34 @@ grails { plugin { springsecurity {
             '/oauth/authorize.dispatch'   : ['IS_AUTHENTICATED_REMEMBERED'],
             '/oauth/token.dispatch'       : ['IS_AUTHENTICATED_REMEMBERED'],
         ]
+        // NOTE: structure of interceptUrlMap is changed to a list of objects (instead of one map)
         interceptUrlMap = [
-            '/login/**'                   : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/css/**'                     : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/js/**'                      : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/images/analysisFiles/**'    : ['IS_AUTHENTICATED_REMEMBERED'],
-            '/images/**'                  : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/static/**'                  : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/search/loadAJAX**'          : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/analysis/getGenePatternFile': ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/analysis/getTestFile'       : ['IS_AUTHENTICATED_ANONYMOUSLY'],
-            '/requestmap/**'              : ['ROLE_ADMIN'],
-            '/role/**'                    : ['ROLE_ADMIN'],
-            '/authUser/**'                : ['ROLE_ADMIN'],
-            '/secureObject/**'            : ['ROLE_ADMIN'],
-            '/accessLog/**'               : ['ROLE_ADMIN'],
-            '/authUserSecureAccess/**'    : ['ROLE_ADMIN'],
-            '/secureObjectPath/**'        : ['ROLE_ADMIN'],
-            '/userGroup/**'               : ['ROLE_ADMIN'],
-            '/secureObjectAccess/**'      : ['ROLE_ADMIN'],
-            *                             : (oauthEnabled ?  oauthEndpoints : [:]),
-            '/**'                         : ['IS_AUTHENTICATED_REMEMBERED'], // must be last
-        ]
+                [pattern: '/login/**',         access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/css/**',                     access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/js/**',                      access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/assets/**',                      access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/grails-errorhandler',        access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/images/analysisFiles/**',    access: ['IS_AUTHENTICATED_REMEMBERED']],
+                [pattern: '/images/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/static/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/search/loadAJAX**',          access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/analysis/getGenePatternFile',access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/analysis/getTestFile',       access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/requestmap/**',              access: ['ROLE_ADMIN']],
+                [pattern: '/role/**',                    access: ['ROLE_ADMIN']],
+                [pattern: '/authUser/**',                access: ['ROLE_ADMIN']],
+                [pattern: '/secureObject/**',            access: ['ROLE_ADMIN']],
+                [pattern: '/accessLog/**',               access: ['ROLE_ADMIN']],
+                [pattern: '/authUserSecureAccess/**',    access: ['ROLE_ADMIN']],
+                [pattern: '/secureObjectPath/**',        access: ['ROLE_ADMIN']],
+                [pattern: '/userGroup/**',               access: ['ROLE_ADMIN']],
+                [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']]
+        ] +
+                (oauthEnabled ?  oauthEndpoints : []) +
+                (gwavaEnabled ?  gwavaMappings : []) +
+                [
+                        [pattern: '/**',                         access: ['IS_AUTHENTICATED_REMEMBERED']], // must be last
+                ]
         rejectIfNoRule = true
     }
 
