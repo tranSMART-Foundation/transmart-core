@@ -350,7 +350,8 @@ grails { plugin { springsecurity {
             [pattern: '/authUserSecureAccess/**',    access: ['ROLE_ADMIN']],
             [pattern: '/secureObjectPath/**',        access: ['ROLE_ADMIN']],
             [pattern: '/userGroup/**',               access: ['ROLE_ADMIN']],
-            [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']]
+            [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']],
+            [pattern: '/oauthAdmin/**', access: ['ROLE_ADMIN']]
         ] +
         (oauthEnabled ?  oauthEndpoints : []) +
         (gwavaEnabled ?  gwavaMappings : []) +
@@ -392,10 +393,10 @@ grails { plugin { springsecurity {
                         '-rememberMeAuthenticationFilter',
                         '-exceptionTranslationFilter',
                 ].join(','),
-                '/studies/**': securedResourcesFilters,
-                '/observations/**': securedResourcesFilters,
-                '/query/**': securedResourcesFilters,
-                '/patient_sets/**': securedResourcesFilters,
+                '/v1/studies/**': securedResourcesFilters,
+                '/v1/observations/**': securedResourcesFilters,
+                '/v2/query/**': securedResourcesFilters,
+                '/v1/patient_sets/**': securedResourcesFilters,
                 '/oauth/inspectToken': securedResourcesFilters,
                 '/transmart-rest-api-version': 'none',
                 '/**': [
@@ -429,7 +430,7 @@ grails { plugin { springsecurity {
                         authorities: ['ROLE_CLIENT'],
                         scopes: ['read', 'write'],
                         authorizedGrantTypes: ['authorization_code', 'refresh_token'],
-                        redirectUris: [(transmartURL - ~'\\/$') + '/oauth/verify'],
+                        redirectUris: [(transmartURL - ~'\\/$') + '/v1/oauth/verify'],
                     ],
                     [
                         clientId: 'glowingbear-js',
