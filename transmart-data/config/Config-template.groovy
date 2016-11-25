@@ -14,15 +14,43 @@
 def catalinaBase      = System.getProperty('catalina.base') ?: '.'
 
 def explodedWarDir    = catalinaBase + '/webapps/transmart'
-def solrPort          = 8080 //port of appserver where solr runs (under ctx path /solr)
+def solrPort          = 8983 //port of appserver where solr runs (under ctx path /solr)
 def searchIndex       = catalinaBase + '/searchIndex' //create this directory
 // for running transmart as WAR, create this directory and then create an alias
-// old versions of transmart also require an alias in tomcat or apache from
-// to expose this directory as <context path>/images/<RModules.imageURL>
-// (usually transmart/images/tempImages)
 def jobsDirectory     = "/var/tmp/jobs/"
+def oauthEnabled      = true
+def samlEnabled       = false
+def gwavaEnabled      = false
+def transmartURL      = "http://localhost:${System.getProperty('server.port', '8080')}/transmart"
 
-def oauthEnabled = true
+//Disabling/Enabling UI tabs
+ui {
+    tabs {
+        //Search was not part of 1.2. It's not working properly. You need to set `show` to `true` to see it on UI
+        search.show = false
+        browse.hide = false
+        //Note: analyze tab is always shown
+        sampleExplorer.hide = false
+        geneSignature.hide = false
+        gwas.hide = false
+        uploadData.hide = false
+        datasetExplorer {
+            gridView.hide = false
+            dataExport.hide = false
+            dataExportJobs.hide = false
+            // Note: by default the analysisJobs panel is NOT shown
+            // Currently, it is only used in special cases
+            analysisJobs.show = false
+            workspace.hide = false
+        }
+    }
+    /*
+    //The below disclaimer appears on the login screen, just below the login button.
+    loginScreen {
+        disclaimer = "Please be aware that tranSMART is a data-integration tool that allows for exploration of available study data. The information shown in tranSMART, and derived from performed analyses, are for research purposes only. NOT for decision making in e.g. clinical trial studies."
+    }
+    */
+}
 
 // I001 – Insertion point 'post-WAR-variables'
 
@@ -38,46 +66,11 @@ def oauthEnabled = true
  * the transmart-data checkout. That file will be appended to this one whenever
  * the Config.groovy target is run */
 
-/* {{{ Log4J Configuration */
-log4j = {
-    environments {
-        development {
-            root {
-                info 'stdout'
-            }
-
-            // for a less verbose startup & shutdown
-            warn  'org.codehaus.groovy.grails.commons.spring'
-            warn  'org.codehaus.groovy.grails.orm.hibernate.cfg'
-            warn  'org.codehaus.groovy.grails.domain.GrailsDomainClassCleaner'
-
-            debug 'org.transmartproject'
-            debug 'com.recomdata'
-            debug 'grails.app.services.com.recomdata'
-            debug 'grails.app.services.org.transmartproject'
-            debug 'grails.app.controllers.com.recomdata'
-            debug 'grails.app.controllers.org.transmartproject'
-            debug 'grails.app.domain.com.recomdata'
-            debug 'grails.app.domain.org.transmartproject'
-            // debug 'org.springframework.security'
-            // (very verbose) debug  'org.grails.plugin.resource'
-        }
-
-        production {
-            def logDirectory = "${catalinaBase}/logs".toString()
-            appenders {
-                rollingFile(name: 'transmart',
-                            file: "${logDirectory}/transmart.log",
-                            layout: pattern(conversionPattern: '%d{dd-MM-yyyy HH:mm:ss,SSS} %5p %c{1} - %m%n'),
-                            maxFileSize: '100MB')
-            }
-            root {
-                warn 'transmart'
-            }
-        }
+environments { production {
+    if (transmartURL.startsWith('http://localhost:')) {
+        println "[WARN] transmartURL not overridden. Some settings (e.g. help page) may be wrong"
     }
-}
-/* }}} */
+} }
 
 /* {{{ Faceted Search Configuration */
 environments {
@@ -95,32 +88,69 @@ environments {
 }
 /* }}} */
 
-/* {{{ Personalization & login */
+/* {{{ Data Upload Configuration - see GWAS plugin Data Upload page */
+// This is the value that will appear in the To: entry of the e-mail popup
+// that is displayed when the user clicks the Email administrator button,
+// on the GWAS plugin Data Upload page
+com.recomdata.dataUpload.adminEmail = 'No data upload adminEmail value set - contact site administrator'
+/* }}} */
+
+/* {{{ Personalization */
 // application logo to be used in the login page
 com.recomdata.largeLogo = "transmartlogo.jpg"
 
 // application logo to be used in the search page
-com.recomdata.searchtool.smallLogo="transmartlogosmall.jpg"
+com.recomdata.smallLogo="transmartlogosmall.jpg"
 
 // contact email address
-com.recomdata.contactUs = "mailto:transmartGPLsupport@recomdata.com"
+com.recomdata.contactUs = "transmart-discuss@googlegroups.com"
+
+// site administrator contact email address
+com.recomdata.adminEmail = "transmart-discuss@googlegroups.com"
 
 // application title
-com.recomdata.appTitle = "tranSMART v" + org.transmart.originalConfigBinding.appVersion +  " (GPL, PostgresSQL)"
+com.recomdata.appTitle = "tranSMART v" + grails.util.Metadata.current.getApplicationVersion()
 
-// Location of the help pages
-// Currently, these are distribution with transmart, so it can also point to
-// that location copy. Should be an absolute URL
-com.recomdata.adminHelpURL = "http://23.23.185.167/transmart/help/adminHelp/default.htm"
+// Location of the help pages. Should be an absolute URL.
+// Currently, these are distribution with transmart,
+// so it can also point to that location copy.
+com.recomdata.adminHelpURL = "$transmartURL/help/adminHelp/default.htm"
+
+environments { development {
+    com.recomdata.bugreportURL = 'https://jira.transmartfoundation.org'
+} }
+
+// Keys without defaults (see Config-extra.php.sample):
+// com.recomdata.projectName
+// com.recomdata.providerName
+// com.recomdata.providerURL
+/* }}} */
+
+/* {{{ Login */
+// Session timeout and heartbeat frequency (ping interval)
+com.recomdata.sessionTimeout = 1800
+com.recomdata.heartbeatLaps = 300
+
+environments { development {
+    com.recomdata.sessionTimeout = Integer.MAX_VALUE / 1000 as int /* ~24 days */
+    com.recomdata.heartbeatLaps = 900
+} }
+
+// Maximum concurrent sessions for a user (-1: unlimited)
+// org.transmartproject.maxConcurrentUserSessions = 10
+
+// Not enabled by default (see Config-extra.php.sample)
+//com.recomdata.passwordstrength.pattern
+//com.recomdata.passwordstrength.description
 
 // Whether to enable guest auto login.
 // If it's enabled no login is required to access tranSMART.
 com.recomdata.guestAutoLogin = false
 environments { development { com.recomdata.guestAutoLogin = true } }
 
-// Guest account user name – if guestAutoLogin is true, this is the username of
+// Guest account user name - if guestAutoLogin is true, this is the username of
 // the account that tranSMART will automatically authenticate users as. This will
-// control the level of access anonymous users will have (the access will be match
+// control the level of access anonymous users will have (the access will match
 // that of the account specified here).
 com.recomdata.guestUserName = 'guest'
 /* }}} */
@@ -130,7 +160,37 @@ com.recomdata.guestUserName = 'guest'
 // Lucene index location for documentation search
 com.recomdata.searchengine.index = searchIndex
 
-/* see also com.recomdata.searchtool.smallogo in the personalization section */
+/* }}} */
+
+/* {{{ Sample Explorer configuration */
+
+// This is an object to dictate the names and 'pretty names' of the SOLR fields.
+// Optionally you can set the width of each of the columns when rendered.
+
+sampleExplorer {
+    fieldMapping = [
+        columns:[
+            [header:'Sample ID',dataIndex:'id', mainTerm: false, showInGrid: false],
+            [header:'BioBank', dataIndex:'BioBank', mainTerm: true, showInGrid: true, width:10],
+            [header:'Source Organism', dataIndex:'Source_Organism', mainTerm: true, showInGrid: true, width:10]
+            // Continue as you have fields
+        ]
+    ]
+    resultsGridHeight = 100
+    resultsGridWidth = 100
+    idfield = 'id'
+}
+
+edu.harvard.transmart.sampleBreakdownMap = [
+    "id":"Aliquots in Cohort"
+]
+
+// Solr configuration for the Sample Explorer
+com { recomdata { solr {
+    maxNewsStories = 10
+    maxRows = 10000
+}}}
+
 /* }}} */
 
 /* {{{ Dataset Explorer configuration */
@@ -155,33 +215,20 @@ com.recomdata.plugins.resultSize = 5000
 
 /* {{{ RModules & Data Export Configuration */
 environments {
+    // This is to target a remove Rserv. Bear in mind the need for shared network storage
+    RModules.host = "127.0.0.1"
+    RModules.port = 6311
+
     // This is not used in recent versions; the URL is always /analysisFiles/
     RModules.imageURL = "/tempImages/" //must end and start with /
 
     production {
-        // The working direcotry for R scripts, where the jobs get created and
+        // The working directory for R scripts, where the jobs get created and
         // output files get generated
         RModules.tempFolderDirectory = jobsDirectory
-
-        // Whether to copy the images from the jobs directory to another
-        // directory from which they can be served. Should be false for
-        // performance reasons. Files will be served from the
-        // tempFolderDirectory instead, which should be exposed as
-        // <context path>/analysisFiles (formerly: <context path>/tempImages)
-        RModules.transferImageFile = false
-
-        // Copy inside the exploded WAR. In actual production, we don't want this
-        // The web server should be able to serve static files from this
-        // directory via the logical name specified in the imageUrl config entry
-        // Not needed because transferImageFile is false
-        //Rmodules.temporaryImageFolder = explodedWarDir + '/images/tempImages/'
     }
     development {
         RModules.tempFolderDirectory = "/tmp"
-
-        // we have stuff in _Events.groovy to make available the contens in
-        // the tempFolderDirectory
-        RModules.transferImageFile = false
 
         /* we don't need to specify temporaryImageDirectory, because we're not copying */
     }
@@ -189,6 +236,32 @@ environments {
     // Used to access R jobs parent directory outside RModules (e.g. data export)
     com.recomdata.plugins.tempFolderDirectory = RModules.tempFolderDirectory
 }
+/* }}} */
+
+/* {{{ GWAS Configuration */
+
+com.recomdata.dataUpload.appTitle="Upload data to tranSMART"
+com.recomdata.dataUpload.stageScript="run_analysis_stage"
+
+// Directory path of com.recomdata.dataUpload.stageScript
+def gwasEtlDirectory = new File(System.getProperty("user.home"), '.grails/transmart-gwasetl')
+
+// Directory to hold GWAS file uploads
+def gwasUploadsDirectory = new File(System.getProperty("user.home"), '.grails/transmart-datauploads')
+
+// Directory to preload with template files with names <type>-template.txt
+def gwasTemplatesDirectory = new File(System.getProperty("user.home"), '.grails/transmart-templates')
+
+com.recomdata.dataUpload.templates.dir = gwasTemplatesDirectory.absolutePath
+com.recomdata.dataUpload.uploads.dir = gwasUploadsDirectory.absolutePath
+com.recomdata.dataUpload.etl.dir = gwasEtlDirectory.absolutePath
+
+[gwasTemplatesDirectory, gwasUploadsDirectory, gwasEtlDirectory].each {
+    if (!it.exists()) {
+        it.mkdir()
+    }
+}
+
 /* }}} */
 
 /* {{{ Misc Configuration */
@@ -204,6 +277,12 @@ environments {
 }
 
 grails.resources.adhoc.excludes = [ '/images' + RModules.imageURL + '**' ]
+
+// Adding properties to the Build information panel
+buildInfo { properties {
+   include = [ 'app.grails.version', 'build.groovy' ]
+   exclude = [ 'env.proc.cores' ]
+} }
 
 /* }}} */
 
@@ -225,7 +304,8 @@ grails { plugin { springsecurity {
     // requestmap in db
     securityConfigType = grails.plugin.springsecurity.SecurityConfigType.Requestmap
     // url to redirect after login in
-    successHandler.defaultTargetUrl = '/userLanding'
+    // just_rest branch provides alternative default via org.transmart.defaultLoginRedirect
+    successHandler.defaultTargetUrl = org.transmart.defaultLoginRedirect ?: '/userLanding'
     // logout url
     logout.afterLogoutUrl = '/login/forceAuth'
 
@@ -240,37 +320,43 @@ grails { plugin { springsecurity {
     } else {
         securityConfigType = 'InterceptUrlMap'
         def oauthEndpoints = [
-            '/oauth/authorize.dispatch'   : ['IS_AUTHENTICATED_REMEMBERED'],
-            '/oauth/token.dispatch'       : ['IS_AUTHENTICATED_REMEMBERED'],
+              [pattern: '/oauth/authorize.dispatch', access: ["isFullyAuthenticated() and (request.getMethod().equals('GET') or request.getMethod().equals('POST'))"]],
+              [pattern: '/oauth/token.dispatch', access: ["isFullyAuthenticated() and request.getMethod().equals('POST')"]],
         ]
-        // NOTE: structure of interceptUrlMap is changed to a list of objects (instead of one map)
+
+        // This looks dangerous and it possibly is (would need to check), but
+        // reflects the instructions I got from the developer.
+        def gwavaMappings = [
+            [pattern: '/gwasWeb/**', access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+        ]
+
         interceptUrlMap = [
-                [pattern: '/login/**',         access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/css/**',                     access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/js/**',                      access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/assets/**',                      access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/grails-errorhandler',        access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/images/analysisFiles/**',    access: ['IS_AUTHENTICATED_REMEMBERED']],
-                [pattern: '/images/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/static/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/search/loadAJAX**',          access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/analysis/getGenePatternFile',access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/analysis/getTestFile',       access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
-                [pattern: '/requestmap/**',              access: ['ROLE_ADMIN']],
-                [pattern: '/role/**',                    access: ['ROLE_ADMIN']],
-                [pattern: '/authUser/**',                access: ['ROLE_ADMIN']],
-                [pattern: '/secureObject/**',            access: ['ROLE_ADMIN']],
-                [pattern: '/accessLog/**',               access: ['ROLE_ADMIN']],
-                [pattern: '/authUserSecureAccess/**',    access: ['ROLE_ADMIN']],
-                [pattern: '/secureObjectPath/**',        access: ['ROLE_ADMIN']],
-                [pattern: '/userGroup/**',               access: ['ROLE_ADMIN']],
-                [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']]
+            [pattern: '/login/**',         access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/css/**',                     access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/js/**',                      access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/assets/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/grails-errorhandler',        access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/images/analysisFiles/**',    access: ['IS_AUTHENTICATED_REMEMBERED']],
+            [pattern: '/images/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/static/**',                  access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/search/loadAJAX**',          access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/analysis/getGenePatternFile',access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/analysis/getTestFile',       access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+            [pattern: '/requestmap/**',              access: ['ROLE_ADMIN']],
+            [pattern: '/role/**',                    access: ['ROLE_ADMIN']],
+            [pattern: '/authUser/**',                access: ['ROLE_ADMIN']],
+            [pattern: '/secureObject/**',            access: ['ROLE_ADMIN']],
+            [pattern: '/accessLog/**',               access: ['ROLE_ADMIN']],
+            [pattern: '/authUserSecureAccess/**',    access: ['ROLE_ADMIN']],
+            [pattern: '/secureObjectPath/**',        access: ['ROLE_ADMIN']],
+            [pattern: '/userGroup/**',               access: ['ROLE_ADMIN']],
+            [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']]
         ] +
-                (oauthEnabled ?  oauthEndpoints : []) +
-                (gwavaEnabled ?  gwavaMappings : []) +
-                [
-                        [pattern: '/**',                         access: ['IS_AUTHENTICATED_REMEMBERED']], // must be last
-                ]
+        (oauthEnabled ?  oauthEndpoints : []) +
+        (gwavaEnabled ?  gwavaMappings : []) +
+        [
+            [pattern: '/**',                         access: ['IS_AUTHENTICATED_REMEMBERED']], // must be last
+        ]
         rejectIfNoRule = true
     }
 
@@ -278,14 +364,6 @@ grails { plugin { springsecurity {
     password.algorithm = 'bcrypt'
     // Number of bcrypt rounds
     password.bcrypt.logrounds = 14
-
-    /* {{{ Spring security – error messages */
-    errors.login.expired         = 'Your account has expired'
-    errors.login.passwordExpired = 'Your password has expired'
-    errors.login.disabled        = 'Your login has been disabled'
-    errors.login.locked          = 'Your account has been locked'
-    errors.login.fail            = 'Login has failed; check the provided credentials'
-    /* }}} */
 
     providerNames = [
         'daoAuthenticationProvider',
@@ -296,108 +374,206 @@ grails { plugin { springsecurity {
     if (oauthEnabled) {
         providerNames << 'clientCredentialsAuthenticationProvider'
 
+        def securedResourcesFilters = [
+                'JOINED_FILTERS',
+                '-securityContextPersistenceFilter',
+                '-logoutFilter',
+                '-rememberMeAuthenticationFilter',
+                '-basicAuthenticationFilter',
+                '-exceptionTranslationFilter',
+        ].join(',')
+
+        filterChain.chainMap = [
+                '/oauth/token': [
+                        'JOINED_FILTERS',
+                        '-oauth2ProviderFilter',
+                        '-securityContextPersistenceFilter',
+                        '-logoutFilter',
+                        '-rememberMeAuthenticationFilter',
+                        '-exceptionTranslationFilter',
+                ].join(','),
+                '/studies/**': securedResourcesFilters,
+                '/observations/**': securedResourcesFilters,
+                '/query/**': securedResourcesFilters,
+                '/patient_sets/**': securedResourcesFilters,
+                '/oauth/inspectToken': securedResourcesFilters,
+                '/transmart-rest-api-version': 'none',
+                '/**': [
+                        'JOINED_FILTERS',
+                        '-statelessSecurityContextPersistenceFilter',
+                        '-oauth2ProviderFilter',
+                        '-clientCredentialsTokenEndpointFilter',
+                        '-basicAuthenticationFilter',
+                        '-oauth2ExceptionTranslationFilter'
+                ].join(','),
+        ].collect { k, v ->
+            [pattern: k, filters: v]
+        }
+
+        grails.exceptionresolver.params.exclude = ['password', 'client_secret']
+
+        def glowingBearRedirectUris = [
+                transmartURL - ~/transmart\/?$/ + 'connections',
+        ]
+        // for dev, node reverse proxy runs on 8001
+        glowingBearRedirectUris << 'http://localhost:8001/connections'
+
         oauthProvider {
+            authorization.requireRegisteredRedirectUri = true
+            authorization.requireScope = false
+
             clients = [
-                    [clientId: 'api-client', clientSecret: 'api-client']
+                    [
+                        clientId: 'api-client',
+                        clientSecret: 'api-client',
+                        authorities: ['ROLE_CLIENT'],
+                        scopes: ['read', 'write'],
+                        authorizedGrantTypes: ['authorization_code', 'refresh_token'],
+                        redirectUris: [(transmartURL - ~'\\/$') + '/oauth/verify'],
+                    ],
+                    [
+                        clientId: 'glowingbear-js',
+                        clientSecret: '',
+                        authorities: ['ROLE_CLIENT'],
+                        scopes: ['read', 'write'],
+                        authorizedGrantTypes: ['implicit', 'password'],
+                        redirectUris: glowingBearRedirectUris,
+                    ],
             ]
         }
     }
 
 } } }
-
 /* }}} */
 
 //{{{ SAML Configuration
-org.transmart.security.samlEnabled = false
 
-if (org.transmart.security.samlEnabled) {
-    grails.plugin.springsecurity.providerNames << 'samlAuthenticationProvider'
+if (samlEnabled) {
+    // don't do assignment to grails.plugin.springsecurity.providerNames
+    // see GRAILS-11730
+    grails { plugin { springsecurity {
+        providerNames << 'samlAuthenticationProvider'
+    } } }
+    // again, because of GRAILS-11730
+    def ourPluginConfig
+    grails {
+        ourPluginConfig = plugin
+    }
 
-    org.transmart.security.ssoEnabled = "true"
-    // ID of the Service Provider
+    org { transmart { security {
+        setProperty('samlEnabled', true) // clashes with local variable
+        ssoEnabled  = "true"
 
+        // URL to redirect to after successful authentication
+        successRedirectHandler.defaultTargetUrl = ourPluginConfig.springsecurity.successHandler.defaultTargetUrl
+        // URL to redirect to after successful logout
+        successLogoutHandler.defaultTargetUrl = ourPluginConfig.springsecurity.logout.afterLogoutUrl
 
-    /* {{{ Service provider details (we) */
-    // URL to the IDP's metadata
-    org.transmart.security.saml.sp.id = "gustavo-transmart"
+        saml {
+            /* {{{ Service provider details (we) */
+            sp {
+                // ID of the Service Provider
+                id = "gustavo-transmart"
 
-    // URL of the service provider. This should be autodected, but it isn't
-    org.transmart.security.saml.sp.url = "http://localhost:8080/transmart"
+                // URL of the service provider. This should be autodected, but it isn't
+                url = "http://localhost:8080/transmart"
 
-    // Alias of the Service Provider
-    org.transmart.security.saml.sp.alias = "transmart"
-    /* }}} */
+                // Alias of the Service Provider
+                alias = "transmart"
 
-    // Metadata file of the provider. We insist on keeping instead of just
-    // retrieving it from the provider on startup to prevent transmart from
-    // being unable to start due to provider being down. A copy will still be
-    // periodically fetched from the provider
-    org.transmart.security.saml.idp.metadataFile="/home/gustavo/idp-metadata.xml"
-    // path to keystore which contains keys used by the Service Provider
+                // Alias of the Service Provider's signing key, see keystore details
+                signingKeyAlias = "saml-signing"
+                // Alias of the Service Provider's encryption key
+                encryptionKeyAlias = "saml-encryption"
+            }
+            /* }}} */
 
-    /* {{{ Keystore details */
-    // Location of the keystore. You can use other schemes, like classpath:resource/samlKeystore.jks
-    org.transmart.security.saml.keystore.file="file:///home/gustavo/transmart.jks"
+            // Metadata file of the provider. We insist on keeping instead of just
+            // retrieving it from the provider on startup to prevent transmart from
+            // being unable to start due to provider being down. A copy will still be
+            // periodically fetched from the provider
+            idp.metadataFile = '/home/glopes/idp-local-metadata.xml'
 
-    // keystore's storepass
-    org.transmart.security.saml.keystore.password="changeit"
+            /* {{{ Keystore details */
+            keystore {
+                // Generate with:
+                //  keytool -genkey -keyalg RSA -alias saml-{signing,encryption} \
+                //    -keystore transmart.jks -storepass changeit \
+                //    -validity 3602 -keysize 2048
+                // Location of the keystore. You can use other schemes, like classpath:resource/samlKeystore.jks
+                file = 'file:///home/glopes/transmart.jks'
 
-    // keystore's default key
-    org.transmart.security.saml.keystore.defaultKey="saml-signing"
+                // keystore's storepass
+                password="changeit"
 
-    // Alias of the encryption key in the keystore
-    org.transmart.security.saml.keystore.encryptionKey.alias="saml-encryption"
-    // Password of that the key with above alis in the keystore
-    org.transmart.security.saml.keystore.encryptionKey.password="changeit"
+                // keystore's default key
+                defaultKey="saml-signing"
 
-    // Alias of the signing key in the keystore
-    org.transmart.security.saml.keystore.signingKey.alias="saml-signing"
-    // Password of that the key with above alis in the keystore
-    org.transmart.security.saml.keystore.signingKey.password="changeit"
-    /* }}} */
+                // Alias of the encryption key in the keystore
+                encryptionKey.alias="saml-encryption"
+                // Password of the key with above alias in the keystore
+                encryptionKey.password="changeit"
 
-    /* {{{ Creation of new users */
-    org.transmart.security.saml.createInexistentUsers = "true"
-    org.transmart.security.saml.attribute.username    = "urn:custodix:ciam:1.0:principal:username"
-    org.transmart.security.saml.attribute.firstName   = "urn:oid:2.5.4.42"
-    org.transmart.security.saml.attribute.lastName    = "urn:oid:2.5.4.4"
-    org.transmart.security.saml.attribute.email       = ""
-    /* }}} */
+                // Alias of the signing key in the keystore
+                signingKey.alias="saml-signing"
+                // Password of the key with above alias in the keystore
+                signingKey.password="changeit"
+            }
+            /* }}} */
 
-    //
-    // Except maybe for the binding, you probably won't want to change the rest:
-    //
+            /* {{{ Creation of new users */
+            createInexistentUsers = "true"
+            attribute.username    = "urn:custodix:ciam:1.0:principal:username"
+            attribute.firstName   = "urn:oid:2.5.4.42"
+            attribute.lastName    = "urn:oid:2.5.4.4"
+            attribute.email       = ""
+            attribute.federatedId = "personPrincipalName"
+            /* }}} */
 
-    // These two keys are referenced above
-    // Alias of the Service Provider's signing key, see keystore details
-    org.transmart.security.saml.sp.signingKeyAlias = "saml-signing"
-    // Alias of the Service Provider's encryption key
-    org.transmart.security.saml.sp.encryptionKeyAlias = "saml-encryption"
+            //
+            // Except maybe for the binding, you probably won't want to change the rest:
+            //
 
-    // URL to redirect to after successful authentication
-    org.transmart.security.successRedirectHandler.defaultTargetUrl = grails.plugin.springsecurity.successHandler.defaultTargetUrl
-    // URL to redirect to after successful logout
-    org.transmart.security.successLogoutHandler.defaultTargetUrl = grails.plugin.springsecurity.logout.afterLogoutUrl
+            // Suffix of the login filter, saml authentication is initiated when user browses to this url
+            entryPoint.filterProcesses = "/saml/login"
+            // SAML Binding to be used for above entry point url.
+            entryPoint.binding = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+            // This property must be set otherwise the default binding is used which, in this configuration, is HTTP-ARTIFACT
+            entryPoint.defaultAssertionConsumerIndex = "1"
 
-    // Suffix of the login filter, saml authentication is initiated when user browses to this url
-    org.transmart.security.saml.entryPoint.filterProcesses = "/saml/login"
-    // SAML Binding to be used for above entry point url.
-    org.transmart.security.saml.entryPoint.binding = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-    // This property must be set otherwise the default binding is used which, in this configuration, is HTTP-ARTIFACT
-    org.transmart.security.saml.entryPoint.defaultAssertionConsumerIndex = "1"
+            // Suffix of the Service Provider's metadata, this url needs to be configured on IDP
+            metadata.filterSuffix = "/saml/metadata"
+            // Id of the spring security's authentication manager
+            authenticationManager = "authenticationManager"
+            // Whether sessions should be invalidated after logout
+            logout.invalidateHttpSession = "true"
+            // Id of the spring security user service that should be called to fetch users.
+            saml.userService = "org.transmart.FederatedUserDetailsService"
+        }
+    } } }
+} else { // if (!samlEnabled)
+    org { transmart { security {
+        setProperty('samlEnabled', false) // clashes with local variable
+    } } }
+}
+/* }}} */
 
-    // Suffix of the Service Provider's metadata, this url needs to be configured on IDP
-    org.transmart.security.saml.metadata.filterSuffix = "/saml/metadata"
-    // Id of the spring security's authentication manager
-    org.transmart.security.saml.authenticationManager = "authenticationManager"
-    // Whether sessions should be invalidated after logout
-    org.transmart.security.saml.logout.invalidateHttpSession = "true"
-    // Id of the spring security user service that should be called to fetch users.
-    org.transmart.security.saml.userService = "org.transmart.FederatedUserDetailsService"
-
-} //if (org.transmart.security.samlEnabled)
-
-//</editor-fold> }}}
+/* {{{ gwava */
+if (gwavaEnabled) {
+    // assume deployment alongside transmart
+    com { recomdata { rwg { webstart {
+        def url       = new URL(transmartURL)
+        codebase      = "$url.protocol://$url.host${url.port != -1 ? ":$url.port" : ''}/gwava"
+        jar           = './ManhattanViz2.1g.jar'
+        mainClass     = 'com.pfizer.mrbt.genomics.Driver'
+        gwavaInstance = 'transmartstg'
+        transmart.url = transmartURL - ~'\\/$'
+   } } } }
+   com { recomdata { rwg { qqplots {
+       cacheImages = new File(jobsDirectory, 'cachedQQplotImages').toString()
+   } } } }
+}
+/* }}} */
 
 /* {{{ Quartz jobs configuration */
 // start delay for the sweep job
@@ -406,6 +582,60 @@ com.recomdata.export.jobs.sweep.startDelay =60000 // d*h*m*s*1000
 com.recomdata.export.jobs.sweep.repeatInterval = 86400000 // d*h*m*s*1000
 // specify the age of files to be deleted (in days)
 com.recomdata.export.jobs.sweep.fileAge = 3
+/* }}} */
+
+/* {{{ File store and indexing configuration */
+com.rwg.solr.browse.path   = '/solr/browse/select/'
+com.rwg.solr.update.path = '/solr/browse/dataimport/'
+com.recomdata.solr.baseURL = "${com.rwg.solr.scheme}://${com.rwg.solr.host}" +
+                             "${new File(com.rwg.solr.browse.path).parent}"
+
+def fileStoreDirectory = new File(System.getProperty("user.home"), '.grails/transmart-filestore')
+def fileImportDirectory = new File(System.getProperty("java.io.tmpdir"), 'transmart-fileimport')
+com.recomdata.FmFolderService.filestoreDirectory = fileStoreDirectory.absolutePath
+com.recomdata.FmFolderService.importDirectory = fileImportDirectory.absolutePath
+
+[fileStoreDirectory, fileImportDirectory].each {
+    if (!it.exists()) {
+        it.mkdir()
+    }
+}
+/* }}} */
+
+/* {{{ Sample Explorer configuration */
+
+sampleExplorer {
+    fieldMapping = [
+        columns:[
+            [header:'ID', dataIndex:'id', mainTerm: true, showInGrid: true, width:20],
+            [header:'trial name', dataIndex:'trial_name', mainTerm: true, showInGrid: true, width:20],
+            [header:'barcode', dataIndex:'barcode', mainTerm: true, showInGrid: true, width:20],
+            [header:'plate id', dataIndex:'plate_id', mainTerm: true, showInGrid: true, width:20],
+            [header:'patient id', dataIndex:'patient_id', mainTerm: true, showInGrid: true, width:20],
+            [header:'external id', dataIndex:'external_id', mainTerm: true, showInGrid: true, width:20],
+            [header:'aliquot id', dataIndex:'aliquot_id', mainTerm: true, showInGrid: true, width:20],
+            [header:'visit', dataIndex:'visit', mainTerm: true, showInGrid: true, width:20],
+            [header:'sample type', dataIndex:'sample_type', mainTerm: true, showInGrid: true, width:20],
+            [header:'description', dataIndex:'description', mainTerm: true, showInGrid: true, width:20],
+            [header:'comment', dataIndex:'comment', mainTerm: true, showInGrid: true, width:20],
+            [header:'location', dataIndex:'location', mainTerm: true, showInGrid: true, width:20],
+            [header:'organism', dataIndex:'source_organism', mainTerm: true, showInGrid: true, width:20]
+        ]
+    ]
+    resultsGridHeight = 100
+    resultsGridWidth = 100
+    idfield = 'id'
+}
+
+edu.harvard.transmart.sampleBreakdownMap = [
+    "aliquot_id":"Aliquots in Cohort"
+]
+
+com { recomdata { solr {
+    maxNewsStories = 10
+    maxRows = 10000
+}}}
+
 /* }}} */
 
 // I002 – Insertion point 'end'
