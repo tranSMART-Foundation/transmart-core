@@ -19,69 +19,57 @@
 
 
 import groovy.transform.ToString
-@Grab(group='org.codehaus.gpars', module='gpars', version='1.1.0')
 import groovyx.gpars.GParsPool
 @Grab(group='commons-net', module='commons-net', version='3.3')
 import org.apache.commons.net.ftp.FTPClient
 import groovy.transform.Canonical
 import groovy.transform.InheritConstructors
+import inc.oracle.Log
 import org.apache.commons.net.ftp.FTPReply
-import groovy.util.logging.Slf4j
-@Grab(group='ch.qos.logback', module='logback-classic', version='1.0.13')
 
-@Slf4j
-class Script {
-
-    static run(args) {
-        def cli = new CliBuilder()
-        cli.f 'Use the feeds specified in this file; can be specified multiple times',
+def cli = new CliBuilder()
+cli.f 'Use the feeds specified in this file; can be specified multiple times',
         args: 1, argName: 'file', longOpt: 'feed-list', required: true
-        cli.o 'Output file', args: 1, argName: 'file', longOpt: 'out', required: true
-        cli.h 'Show this help', longOpt: 'help'
-        cli.usage = '[-j <num conn>] -f <file> [-f <file> ...]'
+cli.o 'Output file', args: 1, argName: 'file', longOpt: 'out', required: true
+cli.h 'Show this help', longOpt: 'help'
+cli.usage = '[-j <num conn>] -f <file> [-f <file> ...]'
 
-        def options = cli.parse args
-        if ( !options ) {
-            log.error 'Invalid options'
+def options = cli.parse args
+if (!options) {
+    Log.err 'Invalid options'
+    System.exit 1
+}
+final int NUMBER_OF_THREADS = 4
+
+List<DataSet> dataSets
+GParsPool.withPool(NUMBER_OF_THREADS) {
+    def feeds = new FeedFactory(options.fs).createFeeds()
+    dataSets = feeds.collect { feed ->
+        try {
+            def result = feed.fetchDataSets()
+            Log.out "Got ${result.size()} data sets from $feed"
+            result
+        } catch (Exception e) {
+            Log.err("Error fetching data sets for feed $feed: ${e.message}")
             System.exit 1
         }
-        final int NUMBER_OF_THREADS = 4
-
-        List<DataSet> dataSets
-        GParsPool.withPool ( NUMBER_OF_THREADS ) {
-            def feeds = new FeedFactory(options.fs).createFeeds()
-            dataSets = feeds.collect { feed ->
-                try {
-                    def result = feed.fetchDataSets()
-                    log.info "Got ${result.size()} data sets from $feed"
-                    result
-                } catch (Exception e) {
-                    log.error "Error fetching data sets for feed $feed: ${e.message}"
-                    System.exit 1
-                }
-            }.flatten()
-        }
-
-        def groupedDataSets = dataSets.groupBy {
-            [it.study, it.type]
-        }
-        log.info "Found  ${groupedDataSets.size()}  unique data sets"
-        dataSets = groupedDataSets.collect {
-            List<String> key, List<DataSet> list ->
-            list
-        }
-
-        new File ( options.o ).withWriter {
-            writer ->
-            dataSets.each {
-                writer.write "${it[0].study} ${it[0].type} " +
-                        "${it*.URL*.toExternalForm().join(" ")}\n"
-            }
-        }
-    }
+    }.flatten()
 }
 
-Script.run(args)
+def groupedDataSets = dataSets.groupBy {
+    [it.study, it.type]
+}
+Log.out "Found ${groupedDataSets.size()} unique data sets"
+dataSets = groupedDataSets.collect { List<String> key, List<DataSet> list ->
+    list
+}
+
+new File(options.o).withWriter { writer ->
+    dataSets.each {
+        writer.write "${it[0].study} ${it[0].type} " +
+                "${it*.URL*.toExternalForm().join(" ")}\n"
+    }
+}
 
 interface Feed {
     Set<DataSet> fetchDataSets()
