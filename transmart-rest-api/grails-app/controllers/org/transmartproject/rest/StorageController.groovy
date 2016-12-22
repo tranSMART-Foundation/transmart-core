@@ -41,6 +41,7 @@ class StorageController extends RestfulController<LinkedFileCollection> {
 
     @Override
     def show() {
+        log.info "Fetching linked file collection with id: ${params.getLong('id')}."
         def fileCollection = queryForResource(params.getLong('id'))
         if (fileCollection == null) {
             notFound()
@@ -96,6 +97,7 @@ class StorageController extends RestfulController<LinkedFileCollection> {
     }
 
     @Override
+    @Transactional
     def delete() {
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
         if (!user.admin) {
@@ -106,6 +108,7 @@ class StorageController extends RestfulController<LinkedFileCollection> {
     }
 
     @Override
+    @Transactional
     def update() {
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
         if (!user.admin) {

@@ -1,6 +1,7 @@
 package org.transmartproject.rest
 
 import grails.rest.RestfulController
+import grails.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
 import org.transmartproject.core.exceptions.AccessDeniedException
 import org.transmartproject.core.users.UsersResource
@@ -26,6 +27,7 @@ class StorageSystemController extends RestfulController<StorageSystem> {
     CurrentUser currentUser
 
     @Override
+    @Transactional
     def save() {
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
         if (!user.admin) {
@@ -36,6 +38,7 @@ class StorageSystemController extends RestfulController<StorageSystem> {
     }
 
     @Override
+    @Transactional
     def delete() {
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
         if (!user.admin) {
@@ -46,6 +49,7 @@ class StorageSystemController extends RestfulController<StorageSystem> {
     }
 
     @Override
+    @Transactional
     def update() {
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
         if (!user.admin) {
