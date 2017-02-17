@@ -76,6 +76,34 @@ grails:
                 scriptlets: html
                 taglib: none
                 staticparts: none
+    plugin:
+        springsecurity:
+            oauth2:
+                active: true
+                loginFormUrl: '/'
+                providers:
+                     google:
+                        api_key: '223124584843-732fitr43ajd9aksqje0s9o4r8qtsugi.apps.googleusercontent.com'               #needed
+                        api_secret: '2Dmw1Un9w8pXpILfBFIz30-V'         #needed
+                        successUri: "/oauth2/google/success"    #optional
+                        failureUri: "/oauth2/google/failure"    #optional
+                        callback: "/oauth2/google/callback"     #optional
+                        #scopes: "userinfo.email"                    #optional, see https://developers.google.com/identity/protocols/googlescopes#monitoringv3
+#            successHandler:
+#                alwaysUseDefault: true
+#                defaultTargetUrl: '/'
+#            failureHandler:
+#                defaultFailureUrl: '/'
+#                ajaxAuthFailUrl: '/'
+                oauthProvider:
+                      clientLookup:
+                          className: 'org.transmart.org.transmart.oauth2.Client'
+                      authorizationCodeLookup:
+                          className: 'org.transmart.org.transmart.oauth2.AuthorizationCode'
+                      accessTokenLookup:
+                          className: 'org.transmart.org.transmart.oauth2.AccessToken'
+                      refreshTokenLookup:
+                          className: 'org.transmart.org.transmart.oauth2.RefreshToken'
 endpoints:
     jmx:
         unique-names: true
@@ -88,26 +116,37 @@ hibernate:
         use_query_cache: false
         region.factory_class: org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory
 
-dataSource:
-    pooled: true
-    jmxExport: true
-    driverClassName: org.h2.Driver
-    username: sa
-    password:
+dataSources:
+    dataSource:
+        url: jdbc:postgresql://localhost:5432/transmart
+        driverClassName: org.postgresql.Driver
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        username: tm_cz
+        password: tm_cz
+        dbCreate: none
+    oauth2:
+        driverClassName: 'org.h2.Driver'
+        url: "jdbc:h2:~/.grails/oauth2db;MVCC=TRUE"
+        dialect: 'org.hibernate.dialect.H2Dialect'
+        username: 'sa'
+        password: ''
+        dbCreate: 'update'
+        logSql: true
+        formatSql: true
 
 environments:
     development:
         dataSource:
-            url: jdbc:postgresql://localhost:6000/transmart
+            url: jdbc:postgresql://localhost:5432/transmart
             driverClassName: org.postgresql.Driver
             dialect: org.hibernate.dialect.PostgreSQLDialect
-            username: biomart_user
-            password: biomart_user
+            username: tm_cz
+            password: tm_cz
             dbCreate: none
     test:
         dataSource:
-            dbCreate: update
-            url: jdbc:h2:mem:testDb;MVCC=TRUE;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE
+            dbCreate: none
+            url: jdbc:h2:./prodDb;MVCC=TRUE;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE
     production:
         dataSource:
             dbCreate: none
@@ -130,3 +169,9 @@ environments:
                 testOnReturn: false
                 jdbcInterceptors: ConnectionState
                 defaultTransactionIsolation: 2 # TRANSACTION_READ_COMMITTED
+---
+org:
+  transmartproject:
+    app:
+      oauthEnabled: true
+
