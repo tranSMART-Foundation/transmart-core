@@ -58,7 +58,9 @@ dependencies {
 //    compile "org.springframework.boot:spring-boot-starter-security"
     compile 'org.grails.plugins:spring-security-core:3.1.1'
     compile 'org.grails.plugins:spring-security-oauth2-provider:3.0.0-RC2'
-    runtime 'org.springframework.security:spring-security-config:3.2.3.RELEASE'
+//    runtime 'org.springframework.security:spring-security-config:3.2.3.RELEASE'
+    compile 'org.springframework.security:spring-security-ldap:3.2.3.RELEASE'
+//    compile 'org.springframework.security:spring-security-web:3.2.3.RELEASE'
 //    compile 'org.grails.plugins:spring-security-core:3.1.1'
 //    compile 'org.grails.plugins:spring-security-oauth2:1.1.0'
 //    compile 'org.grails.plugins:spring-security-oauth2-google:1.1.0'
@@ -67,8 +69,8 @@ dependencies {
     // local gradle submodule deps
     //compile project(':transmart-core-api')
     //compile project(':transmart-core-db')
-    /*compile project(':search-domain')
-    compile project(':transmart-java')
+    compile project(':search-domain')
+    /*compile project(':transmart-java')
     compile project(':search-domain')
     compile project(':biomart-domain')
     compile project(':transmart-legacy-db')*/

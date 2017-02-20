@@ -61,7 +61,7 @@ class OAuth2SyncService {
                     /* Workaround to bug XXX due to which event handlers such as beforeInsert()/beforeUpdate() are
                      * not called on domain objects of non-default datastores. Remove this workaround if the bug has
                      * been solved in a grails update, and remove the corresponding exception code in
-                     * org.transmart.oauth2.Client.
+                     * Client.
                      */
                     client.encodeClientSecret()
                 }
