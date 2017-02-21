@@ -238,6 +238,7 @@ grails { plugin { springsecurity {
                 [pattern: '/userGroup/**',               access: ['ROLE_ADMIN']],
                 [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']]
         ] +
+                (org.transmartproject.app.oauthEnabled ?  oauthEndpoints : []) +
                 (org.transmartproject.app.gwavaEnabled ?  gwavaMappings : []) +
                 [
                         [pattern: '/**',                         access: ['IS_AUTHENTICATED_REMEMBERED']], // must be last
@@ -277,10 +278,10 @@ grails { plugin { springsecurity {
                         '-rememberMeAuthenticationFilter',
                         '-exceptionTranslationFilter',
                 ].join(','),
-//                '/oauth/inspectToken': securedResourcesFilters,
-//                '/versions/**': securedResourcesFilters,
-//                '/v1/**': securedResourcesFilters,
-//                '/v2/**': securedResourcesFilters,
+                '/oauth/inspectToken': securedResourcesFilters,
+                '/versions/**': securedResourcesFilters,
+                '/v1/**': securedResourcesFilters,
+                '/v2/**': securedResourcesFilters,
                 '/**': [
                         'JOINED_FILTERS',
                         '-statelessSecurityContextPersistenceFilter',

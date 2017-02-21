@@ -2,6 +2,8 @@ package org.transmart.server
 
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration
+import grails.transaction.Transactional
+import groovy.util.logging.Slf4j
 import org.grails.config.NavigableMap
 import org.grails.config.NavigableMapPropertySource
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -9,7 +11,8 @@ import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfigu
 import org.springframework.context.EnvironmentAware
 import org.springframework.core.env.Environment
 
-@EnableAutoConfiguration(exclude = [SecurityFilterAutoConfiguration])
+@Slf4j
+    @EnableAutoConfiguration(exclude = [SecurityFilterAutoConfiguration])
 class Application extends GrailsAutoConfiguration implements EnvironmentAware {
     static void main(String[] args) {
         GrailsApp.run(Application, args)

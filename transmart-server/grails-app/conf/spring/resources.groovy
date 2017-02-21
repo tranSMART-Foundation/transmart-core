@@ -12,13 +12,29 @@ import org.transmart.oauth2.ActiveDirectoryLdapAuthenticationExtension
 import org.transmart.security.AuthUserDetailsService
 import org.transmart.oauth2.BruteForceLoginLockService
 import org.transmart.oauth2.LdapAuthUserDetailsMapper
+import security.AuthSuccessEventListener
+import security.BadCredentialsEventListener
 
 def logger = Logger.getLogger('com.recomdata.conf.resources')
 
 beans = {
+    xmlns context: "http://www.springframework.org/schema/context"
+    xmlns aop: "http://www.springframework.org/schema/aop"
     //overrides bean implementing GormUserDetailsService?
     userDetailsService(AuthUserDetailsService)
 
+    bruteForceLoginLockService(BruteForceLoginLockService) {
+        allowedNumberOfAttempts = grailsApplication.config.bruteForceLoginLock.allowedNumberOfAttempts
+        lockTimeInMinutes = grailsApplication.config.bruteForceLoginLock.lockTimeInMinutes
+    }
+
+    authSuccessEventListener(AuthSuccessEventListener) {
+        bruteForceLoginLockService = ref('bruteForceLoginLockService')
+    }
+
+    badCredentialsEventListener(BadCredentialsEventListener) {
+        bruteForceLoginLockService = ref('bruteForceLoginLockService')
+    }
     sessionRegistry(SessionRegistryImpl)
 
     redirectStrategy(DefaultRedirectStrategy)
@@ -85,5 +101,14 @@ beans = {
     }
 
     introspectorCleanupListener(IntrospectorCleanupListener)
+    sessionRegistry(SessionRegistryImpl)
+    redirectStrategy(DefaultRedirectStrategy)
+    accessDeniedHandler(AccessDeniedHandlerImpl) {
+        errorPage = '/login'
+    }
+    failureHandler(SimpleUrlAuthenticationFailureHandler) {
+        defaultFailureUrl = '/login'
+    }
+
 
 }
