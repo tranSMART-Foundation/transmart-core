@@ -2,14 +2,12 @@
 
 package org.transmartproject.db.metadata
 
-import groovy.transform.InheritConstructors
 import org.transmartproject.core.exceptions.DataInconsistencyException
+import org.transmartproject.core.exceptions.LegacyStudyException
 import org.transmartproject.core.multidimquery.Dimension
-import org.transmartproject.db.i2b2data.ObservationFact
+import org.transmartproject.db.i2b2data.Study
 import org.transmartproject.db.multidimquery.DimensionImpl
 import org.transmartproject.db.multidimquery.ModifierDimension
-
-import org.transmartproject.db.i2b2data.Study
 
 import static org.transmartproject.db.i2b2data.ObservationFact.TYPE_NUMBER
 import static org.transmartproject.db.i2b2data.ObservationFact.TYPE_TEXT
@@ -105,7 +103,3 @@ class DimensionDescription {
         findAll { name != LEGACY_MARKER }*.dimension
     }
 }
-
-
-@InheritConstructors
-class LegacyStudyException extends UnsupportedOperationException {}

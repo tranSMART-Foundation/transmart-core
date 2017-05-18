@@ -8,8 +8,8 @@ import groovy.util.logging.Slf4j
 /**
  * Result types for observation queries.
  */
-@CompileStatic
 @Slf4j
+@CompileStatic
 enum AggregateType {
     MIN,
     MAX,

@@ -3,6 +3,8 @@
 package tests.rest.v2.hypercube
 
 import base.RESTSpec
+import spock.lang.Ignore
+import spock.lang.Requires
 
 import static base.ContentTypeFor.contentTypeForJSON
 import static base.ContentTypeFor.contentTypeForProtobuf
@@ -60,7 +62,8 @@ class ConstraintSpec extends RESTSpec {
         contentTypeForProtobuf | _
     }
 
-    def "TrueConstraint.class"() {
+    @Requires({ RUN_HUGE_TESTS })
+    def "TrueConstraint.class"(){
         def request = [
                 path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
@@ -250,6 +253,7 @@ class ConstraintSpec extends RESTSpec {
         contentTypeForProtobuf | protobufSelector
     }
 
+    @Requires({ RUN_HUGE_TESTS })
     def "Negation.class"() {
         def request = [
                 path      : PATH_OBSERVATIONS,
@@ -382,6 +386,7 @@ class ConstraintSpec extends RESTSpec {
         contentTypeForProtobuf | protobufSelector
     }
 
+    @Requires({ RUN_HUGE_TESTS })
     def "NullConstraint.class"() {
         def request = [
                 path      : PATH_OBSERVATIONS,

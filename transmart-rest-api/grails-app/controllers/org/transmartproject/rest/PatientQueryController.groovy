@@ -39,7 +39,7 @@ class PatientQueryController extends AbstractQueryController {
             return
         }
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
-        def patients = queryService.listPatients(constraint, user)
+        def patients = multiDimService.listPatients(constraint, user)
         respond wrapPatients(apiVersion, patients)
     }
 
@@ -63,7 +63,7 @@ class PatientQueryController extends AbstractQueryController {
 
         Constraint constraint = new PatientSetConstraint(patientIds: [id])
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
-        def patients = queryService.listPatients(constraint, user)
+        def patients = multiDimService.listPatients(constraint, user)
         if (patients.empty) {
             throw new NoSuchResourceException("Patient not found with id ${id}.")
         }
@@ -97,7 +97,7 @@ class PatientQueryController extends AbstractQueryController {
 
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
 
-        QueryResult patientSet = queryService.findPatientSet(id, user)
+        QueryResult patientSet = multiDimService.findPatientSet(id, user)
 
         render new QueryResultWrapper(
                 apiVersion: apiVersion,
@@ -147,7 +147,7 @@ class PatientQueryController extends AbstractQueryController {
 
         User user = (User) usersResource.getUserFromUsername(currentUser.username)
 
-        QueryResult patientSet = queryService.createPatientSet(name, constraint, user)
+        QueryResult patientSet = multiDimService.createPatientSet(name, constraint, user)
 
         response.status = 201
         render new QueryResultWrapper(
