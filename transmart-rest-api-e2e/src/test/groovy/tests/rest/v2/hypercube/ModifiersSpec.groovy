@@ -2,15 +2,19 @@
 
 package tests.rest.v2.hypercube
 
+import annotations.RequiresStudy
 import base.RESTSpec
 import tests.rest.v2.constraints
 
+import static base.ContentTypeFor.contentTypeForJSON
+import static base.ContentTypeFor.contentTypeForProtobuf
 import static config.Config.PATH_OBSERVATIONS
 import static config.Config.TUMOR_NORMAL_SAMPLES_ID
 import static tests.rest.v2.Operator.OR
 import static tests.rest.v2.constraints.Combination
 import static tests.rest.v2.constraints.ConceptConstraint
 
+@RequiresStudy(TUMOR_NORMAL_SAMPLES_ID)
 class ModifiersSpec extends RESTSpec {
 
     /**
@@ -21,9 +25,9 @@ class ModifiersSpec extends RESTSpec {
     def "get modifiers"() {
         given: "study TUMOR_NORMAL_SAMPLES is loaded"
         def request = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: toQuery([type: constraints.StudyNameConstraint, studyId: TUMOR_NORMAL_SAMPLES_ID])
+                query     : toQuery([type: constraints.StudyNameConstraint, studyId: TUMOR_NORMAL_SAMPLES_ID])
         ]
 
         when: "I get all observations"
@@ -41,8 +45,8 @@ class ModifiersSpec extends RESTSpec {
         assert modifierDimension == [null, 'Tumor', 'Normal'] as HashSet
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 
@@ -54,12 +58,12 @@ class ModifiersSpec extends RESTSpec {
     def "get modifiers by concept"() {
         given: "study TUMOR_NORMAL_SAMPLES is loaded"
         def request = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: toQuery([
-                        type: Combination,
+                query     : toQuery([
+                        type    : Combination,
                         operator: OR,
-                        args: [
+                        args    : [
                                 [type: ConceptConstraint, path: "\\Public Studies\\TUMOR_NORMAL_SAMPLES\\Lab\\Cell Count\\"],
                                 [type: ConceptConstraint, path: "\\Public Studies\\TUMOR_NORMAL_SAMPLES\\HD\\Breast\\"]
                         ]
@@ -82,8 +86,8 @@ class ModifiersSpec extends RESTSpec {
         assert modifierDimension.containsAll('Tumor', 'Normal')
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 }

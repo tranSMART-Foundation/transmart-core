@@ -2,10 +2,12 @@
 
 package tests.rest.v2.hypercube
 
+import annotations.RequiresStudy
 import base.RESTSpec
 import groovy.json.JsonBuilder
-import selectors.ObservationSelector
 
+import static base.ContentTypeFor.contentTypeForJSON
+import static base.ContentTypeFor.contentTypeForProtobuf
 import static config.Config.PATH_OBSERVATIONS
 import static config.Config.RNASEQ_TRANSCRIPT_ID
 import static tests.rest.v2.constraints.*
@@ -15,6 +17,7 @@ import static tests.rest.v2.constraints.*
  *  TMPREQ-13 Retrieving transcript level RNA-Seq data via the REST API
  *  TMPREQ-15 Retrieving data filtered by proteins, transcripts, and genes using standard ontologies via the API
  */
+@RequiresStudy(RNASEQ_TRANSCRIPT_ID)
 class TranscriptLevelRnaSeqSpec extends RESTSpec {
 
     /**
@@ -24,11 +27,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
      */
     def "transcripts link to genes"() {
         def requestTranscript = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -43,11 +46,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         ]
 
         def requestGene = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -69,13 +72,13 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         def expectedCellCount = 78
         assert responseData1.cells.size() == expectedCellCount
         assert responseData2.cells.size() == expectedCellCount
-        responseData1.cells.eachWithIndex{ cell, i ->
+        responseData1.cells.eachWithIndex { cell, i ->
             assert cell == responseData2.cells[i]
         }
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 
@@ -86,11 +89,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
      */
     def "transcripts link to different sets"() {
         def request1 = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -105,11 +108,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         ]
 
         def request2 = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -134,8 +137,8 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         assert responseData1 != responseData2
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 
@@ -146,11 +149,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
      */
     def "transcripts do not accept gene names"() {
         def request = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -174,8 +177,8 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         assert responseData.type == 'InvalidArgumentsException'
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 
@@ -186,11 +189,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
      */
     def "list of transcripts"() {
         def request = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -205,11 +208,11 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         ]
 
         def requestAssayOnly = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type      : 'autodetect',
+                        constraint: new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ])
@@ -226,8 +229,8 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         assert responseData1 != responseData2
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 
@@ -247,13 +250,13 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
                 -4.3447292229,
                 -4.347572611,
                 -4.3470865035
-                ]
+        ]
         def request = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
                                 type: ConceptConstraint,
                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                         ]),
@@ -264,7 +267,7 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
                                         names: ['tr1']
                                 ]
                         ]),
-                        projection: 'zscore'
+                        projection          : 'zscore'
                 ]
         ]
 
@@ -287,11 +290,10 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         }
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
-
 
     /**
      *  given: "study RNASEQ_TRANSCRIPT is loaded"
@@ -300,20 +302,20 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
      */
     def "Link to multi transcript"() {
         def requestGene = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
-                                "type": Combination,
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
+                                "type"    : Combination,
                                 "operator": "and",
-                                "args": [
+                                "args"    : [
                                         [
                                                 type: ConceptConstraint,
                                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                                         ],
                                         [
-                                                "type": StudyNameConstraint,
+                                                "type"   : StudyNameConstraint,
                                                 "studyId": "RNASEQ_TRANSCRIPT"
                                         ]
                                 ]
@@ -329,20 +331,20 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         ]
 
         def requestTranscript = [
-                path: PATH_OBSERVATIONS,
+                path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
-                query: [
-                        type: 'autodetect',
-                        constraint    : new JsonBuilder([
-                                "type": "combination",
+                query     : [
+                        type                : 'autodetect',
+                        constraint          : new JsonBuilder([
+                                "type"    : "combination",
                                 "operator": "and",
-                                "args": [
+                                "args"    : [
                                         [
                                                 type: ConceptConstraint,
                                                 path: '\\Public Studies\\RNASEQ_TRANSCRIPT\\HD\\Lung\\'
                                         ],
                                         [
-                                                "type": StudyNameConstraint,
+                                                "type"   : StudyNameConstraint,
                                                 "studyId": "RNASEQ_TRANSCRIPT"
                                         ]
                                 ]
@@ -365,13 +367,13 @@ class TranscriptLevelRnaSeqSpec extends RESTSpec {
         def expectedCellCount = 156
         assert responseData1.cells.size() == expectedCellCount
         assert responseData2.cells.size() == expectedCellCount
-        responseData1.cells.eachWithIndex{ cell, i ->
+        responseData1.cells.eachWithIndex { cell, i ->
             assert cell == responseData2.cells[i]
         }
 
         where:
-        acceptType | newSelector
-        contentTypeForJSON | jsonSelector
+        acceptType             | newSelector
+        contentTypeForJSON     | jsonSelector
         contentTypeForProtobuf | protobufSelector
     }
 }
