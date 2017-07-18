@@ -8,6 +8,7 @@ import org.transmartproject.core.multidimquery.Hypercube
 import org.transmartproject.core.multidimquery.MultiDimConstraint
 import org.transmartproject.core.multidimquery.MultiDimensionalDataResource
 import org.transmartproject.core.users.User
+import org.transmartproject.rest.serialization.HypercubeCSVSerializer
 import org.transmartproject.rest.serialization.HypercubeProtobufSerializer
 import org.transmartproject.rest.serialization.HypercubeSerializer
 import org.transmartproject.rest.serialization.HypercubeJsonSerializer
@@ -24,6 +25,7 @@ class MultidimensionalDataService {
     static enum Format {
         JSON('application/json'),
         PROTOBUF('application/x-protobuf'),
+        TSV('TSV'),
         NONE('none')
 
         private String format
@@ -49,8 +51,9 @@ class MultidimensionalDataService {
      * @param hypercube the hypercube to serialise.
      * @param format the output format. Supports JSON and PROTOBUF.
      * @param out the stream to serialise to.
-     */@CompileStatic
-    private void serialise(Hypercube hypercube, Format format, OutputStream out) {
+     */
+    @CompileStatic
+    private void serialise(Map args, Hypercube hypercube, Format format, OutputStream out) {
         HypercubeSerializer serializer
         switch (format) {
             case Format.JSON:
@@ -59,10 +62,13 @@ class MultidimensionalDataService {
             case Format.PROTOBUF:
                 serializer = new HypercubeProtobufSerializer()
                 break
+            case Format.TSV:
+                serializer = new HypercubeCSVSerializer()
+                break
             default:
                 throw new Exception("Unsupported format: ${format}")
         }
-        serializer.write(hypercube, out)
+        serializer.write(args, hypercube, out)
     }
 
     /**
@@ -73,13 +79,13 @@ class MultidimensionalDataService {
      * @param user The user accessing the data
      * @param out
      */
-    void writeClinical(Format format, MultiDimConstraint constraint, User user, OutputStream out) {
+    void writeClinical(Map args, Format format, MultiDimConstraint constraint, User user, OutputStream out) {
 
         Hypercube result = multiDimService.retrieveClinicalData(constraint, user)
 
         try {
             log.info "Writing to format: ${format}"
-            serialise(result, format, out)
+            serialise(args, result, format, out)
         } finally {
             result.close()
         }
@@ -106,8 +112,14 @@ class MultidimensionalDataService {
 
         Hypercube hypercube = multiDimService.highDimension(assayConstraint, biomarkerConstraint, projection, user, type)
 
+        Map args = [:]
+        if (format == Format.TSV) {
+            args = [dataType : type]
+        }
+
         try {
-            serialise(hypercube, format, out)
+            log.info "Writing to format: ${format}"
+            serialise(args, hypercube, format, out)
         } finally {
             hypercube.close()
         }
