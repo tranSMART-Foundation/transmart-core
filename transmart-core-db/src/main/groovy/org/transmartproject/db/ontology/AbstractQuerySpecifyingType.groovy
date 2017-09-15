@@ -45,8 +45,10 @@ abstract class AbstractQuerySpecifyingType implements MetadataSelectQuerySpecifi
     String       dimensionCode
 
     def patientSetQueryBuilderService
-    def sessionFactory
+
     def databasePortabilityService
+
+    def sessionFactory
 
     static constraints = {
         factTableColumn      nullable:   false,   maxSize:   50
@@ -87,6 +89,17 @@ abstract class AbstractQuerySpecifyingType implements MetadataSelectQuerySpecifi
         }
 
         InQuery.addIn(PatientDimension.createCriteria(), 'id', patientIdList).list()
+    }
+
+    protected int countPatients(OntologyTerm term) {
+        def patientsCount = 0
+        String sqlQuery = patientSetQueryBuilderService.buildPatientCountQuery(term)
+        if (sqlQuery.length() > 0) {
+            def query = sessionFactory.currentSession.createSQLQuery(sqlQuery)
+            patientsCount = query.list()[0] ?: 0 as int
+        }
+
+        patientsCount
     }
 
     @Override

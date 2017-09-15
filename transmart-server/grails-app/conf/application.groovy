@@ -51,6 +51,11 @@ grails.mime.types = [html         : [
                      jnlp         : 'application/x-java-jnlp-file',
                      protobuf     : 'application/x-protobuf',
 ]
+
+//Sets upload file size limit
+grails.controllers.upload.maxFileSize = 10 * 1024 * 1024 //10mb
+grails.controllers.upload.maxRequestSize = 10 * 1024 * 1024
+
 // The default codec used to encode data with ${}
 grails.views.javascript.library="jquery"
 grails.views.default.codec = "none" // none, html, base64
@@ -146,6 +151,10 @@ com.recomdata.analysis.genepattern.file.dir = "data"; // Relative to the app roo
 
 com.recomdata.analysis.data.file.dir = "data"; // Relative to the app root "web-app"
 
+// Directories to write R scripts to for use by RServe. Resources are copied at startup.
+org.transmartproject.rmodules.deployment.rscripts = new File(System.getProperty("user.home"), '.grails/transmart-rscripts')
+org.transmartproject.rmodules.deployment.dataexportRscripts = new File(System.getProperty("user.home"), '.grails/transmart-dataexport-rscripts')
+
 // Disclaimer
 StringBuilder disclaimer = new StringBuilder()
 disclaimer.append("<p></p>")
@@ -153,12 +162,7 @@ com.recomdata.disclaimer = disclaimer.toString()
 
 // customization views
 //com.recomdata.view.studyview='_clinicaltrialdetail'
-
-/* }}} */
-
-// Directories to write R scripts to for use by RServe. Resources are copied at startup.
-org.transmartproject.rmodules.deployment.rscripts = new File(System.getProperty("user.home"), '.grails/transmart-rscripts')
-org.transmartproject.rmodules.deployment.dataexportRscripts = new File(System.getProperty("user.home"), '.grails/transmart-dataexport-rscripts')
+com.recomdata.skipdisclaimer = true
 
 grails.spring.bean.packages = []
 
@@ -186,10 +190,10 @@ grails {
 }
 
 // Added by the Spring Security OAuth2 Provider plugin:
-grails.plugin.springsecurity.oauthProvider.clientLookup.className = 'org.transmart.oauth.Client'
-grails.plugin.springsecurity.oauthProvider.authorizationCodeLookup.className = 'org.transmart.oauth.AuthorizationCode'
-grails.plugin.springsecurity.oauthProvider.accessTokenLookup.className = 'org.transmart.oauth.AccessToken'
-grails.plugin.springsecurity.oauthProvider.refreshTokenLookup.className = 'org.transmart.oauth.RefreshToken'
+grails.plugin.springsecurity.oauthProvider.clientLookup.className = 'org.transmart.oauth2.Client'
+grails.plugin.springsecurity.oauthProvider.authorizationCodeLookup.className = 'org.transmart.oauth2.AuthorizationCode'
+grails.plugin.springsecurity.oauthProvider.accessTokenLookup.className = 'org.transmart.oauth2.AccessToken'
+grails.plugin.springsecurity.oauthProvider.refreshTokenLookup.className = 'org.transmart.oauth2.RefreshToken'
 
 // Disable LDAP by default to prevent authentication errors for installations without LDAP
 grails.plugin.springsecurity.ldap.active = false
@@ -213,7 +217,8 @@ grails { plugin { springsecurity {
     // requestmap in db
     securityConfigType = grails.plugin.springsecurity.SecurityConfigType.Requestmap
     // url to redirect after login in
-    successHandler.defaultTargetUrl = '/userLanding'
+    // just_rest branch provides alternative default via org.transmart.defaultLoginRedirect
+    successHandler.defaultTargetUrl = org.transmart.defaultLoginRedirect ?: '/userLanding'
     // logout url
     logout.afterLogoutUrl = '/login/forceAuth'
 
@@ -253,6 +258,9 @@ grails { plugin { springsecurity {
                 [pattern: '/authUserSecureAccess/**',    access: ['ROLE_ADMIN']],
                 [pattern: '/secureObjectPath/**',        access: ['ROLE_ADMIN']],
                 [pattern: '/userGroup/**',               access: ['ROLE_ADMIN']],
+                //TODO This looks dangerous. It opens acess to the gwas data for everybody.
+                [pattern: '/gwasWeb/**',                 access: ['IS_AUTHENTICATED_ANONYMOUSLY']],
+                [pattern: '/oauthAdmin/**',              access: ['ROLE_ADMIN']],
                 [pattern: '/secureObjectAccess/**',      access: ['ROLE_ADMIN']]
         ] +
                 (org.transmartproject.app.oauthEnabled ?  oauthEndpoints : []) +
