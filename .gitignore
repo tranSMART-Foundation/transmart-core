@@ -1,4 +1,6 @@
+gradle/
 .gradle
+gradlew*
 .idea
 out
 .class
@@ -6,3 +8,4 @@ out
 */build/
 /build/
 *.iml
+logs

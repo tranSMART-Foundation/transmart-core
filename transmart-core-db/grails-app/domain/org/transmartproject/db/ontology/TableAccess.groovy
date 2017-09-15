@@ -19,18 +19,21 @@
 
 package org.transmartproject.db.ontology
 
-//import grails.orm.HibernateCriteriaBuilder
+
 import grails.orm.HibernateCriteriaBuilder
 import grails.util.Holders
 import groovy.transform.EqualsAndHashCode
 import org.hibernate.criterion.MatchMode
-import org.transmartproject.core.concept.ConceptKey
+
 import org.transmartproject.core.dataquery.Patient
 import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.core.ontology.OntologyTerm.VisualAttributes
 import org.transmartproject.core.ontology.Study
 import org.transmartproject.db.util.GormWorkarounds
 import org.transmartproject.db.util.StringUtils
+import org.transmartproject.core.concept.ConceptKey
+
+import static org.transmartproject.db.util.StringUtils.asLikeLiteral
 
 @EqualsAndHashCode(includes = ['tableCode'])
 class TableAccess extends AbstractQuerySpecifyingType implements
@@ -163,12 +166,85 @@ class TableAccess extends AbstractQuerySpecifyingType implements
         getDescendants(true, showHidden, showSynonyms)
     }
 
+    @Override
+    List<OntologyTerm> getHDforAllDescendants() {
+        getHDDescendants(true, false, false, false)
+    }
+
+    List<String> getAllDescendantsForFacets() {
+        getDescendantsFullName(true, false, false, false)
+    }
+
+    private List<OntologyTerm> getHDDescendants(boolean allDescendants,
+                                                boolean showHidden = false,
+                                                boolean showSynonyms = false,
+                                                boolean isOrdered = true) {
+
+        HibernateCriteriaBuilder c
+
+        /* extract table code from concept key and resolve it to a table name */
+        c = TableAccess.createCriteria()
+        String tableName = c.get {
+            projections { distinct('tableName') }
+            eq('tableCode', this.conceptKey.tableCode)
+        }
+
+        /* validate this table name */
+        def domainClass = this.ontologyTermDomainClassReferred
+        if (!domainClass) {
+            throw new RuntimeException("Metadata table ${tableName} is not " +
+                    "mapped")
+        }
+
+        /* select level on the original table (is this really necessary?) */
+        c = domainClass.createCriteria();
+        Integer parentLevel = c.get {
+            projections { property 'level' }
+
+            and {
+                eq 'fullName', fullName
+                eq 'cSynonymCd', 'N' as char
+            }
+        }
+        if (parentLevel == null)
+            throw new RuntimeException("Could not determine parent's level; " +
+                    "could not find it in ${domainClass}'s table (fullname: " +
+                    "$fullName)")
+
+        /* Finally select the relevant stuff */
+        def fullNameSearch = asLikeLiteral(fullName) + '%'
+
+        c = domainClass.createCriteria()
+        c.list {
+            and {
+                like 'fullName', fullNameSearch
+                if (allDescendants) {
+                    gt 'level', parentLevel
+                } else {
+                    eq 'level', parentLevel + 1
+                }
+
+                if (!showHidden) {
+                    not { like 'cVisualattributes', '_H%' }
+                }
+                if (!showSynonyms) {
+                    eq 'cSynonymCd', 'N' as char
+                }
+                like 'cVisualattributes', '__H%'
+            }
+            if (isOrdered)
+                order('name')
+        }
+    }
+
     private List<OntologyTerm> getDescendants(boolean allDescendants,
                                               boolean showHidden = false,
-                                              boolean showSynonyms = false) {
+                                              boolean showSynonyms = false,
+                                              boolean isOrdered = true) {
 
         //HibernateCriteriaBuilder c
         HibernateCriteriaBuilder c
+
         /* extract table code from concept key and resolve it to a table name */
         c = TableAccess.createCriteria()
         String tableName = c.get {
@@ -202,6 +278,9 @@ class TableAccess extends AbstractQuerySpecifyingType implements
                     "could not find it in ${domainClass}'s table (fullname: " +
                     "$fullName)")
 
+        /* Finally select the relevant stuff */
+        def fullNameSearch = asLikeLiteral(fullName) + '%'
+
         c = domainClass.createCriteria()
         c.list {
             and {
@@ -219,7 +298,76 @@ class TableAccess extends AbstractQuerySpecifyingType implements
                     eq 'cSynonymCd', 'N' as char
                 }
             }
-            order('name')
+            if (isOrdered)
+                order('name')
+        }
+    }
+
+    private List<String> getDescendantsFullName(boolean allDescendants,
+                                                boolean showHidden = false,
+                                                boolean showSynonyms = false,
+                                                boolean isOrdered = true) {
+
+        HibernateCriteriaBuilder c
+
+        /* extract table code from concept key and resolve it to a table name */
+        c = TableAccess.createCriteria()
+        String tableName = c.get {
+            projections {
+                distinct('tableName')
+            }
+            eq('tableCode', this.conceptKey.tableCode)
+        }
+
+        /* validate this table name */
+        def domainClass = this.ontologyTermDomainClassReferred
+        if (!domainClass) {
+            throw new RuntimeException("Metadata table ${tableName} is not " +
+                    "mapped")
+        }
+
+        /* select level on the original table (is this really necessary?) */
+        c = domainClass.createCriteria();
+        Integer parentLevel = c.get {
+            projections {
+                property 'level'
+            }
+
+            and {
+                eq 'fullName', fullName
+                eq 'cSynonymCd', 'N' as char
+            }
+        }
+        if (parentLevel == null)
+            throw new RuntimeException("Could not determine parent's level; " +
+                    "could not find it in ${domainClass}'s table (fullname: " +
+                    "$fullName)")
+
+        /* Finally select the relevant stuff */
+        def fullNameSearch = asLikeLiteral(fullName) + '%'
+
+        c = domainClass.createCriteria()
+        c.list {
+            projections {
+                property('fullName')
+            }
+            and {
+                like 'fullName', fullNameSearch
+                if (allDescendants) {
+                    gt 'level', parentLevel
+                } else {
+                    eq 'level', parentLevel + 1
+                }
+
+                if (!showHidden) {
+                    not { like 'cVisualattributes', '_H%' }
+                }
+                if (!showSynonyms) {
+                    eq 'cSynonymCd', 'N' as char
+                }
+            }
+            if (isOrdered)
+                order('name')
         }
     }
 
@@ -242,8 +390,13 @@ class TableAccess extends AbstractQuerySpecifyingType implements
     }
 
     @Override
+    int getPatientCount() {
+        super.countPatients(this)
+    }
+
+    @Override
     String toString() {
-        getClass().canonicalName + "[${attached ? 'attached' : 'not attached'}" +
+        getClass().canonicalName + "[${attached?'attached':'not attached'}" +
                 "] [ fullName=$fullName ]"
     }
 }

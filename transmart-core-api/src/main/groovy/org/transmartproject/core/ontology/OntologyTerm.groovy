@@ -1,11 +1,13 @@
 package org.transmartproject.core.ontology
 
+import groovy.transform.CompileStatic
 import org.transmartproject.core.dataquery.Patient
 
 /**
  * An i2b2 ontology metadata entry.
  */
-public interface OntologyTerm {
+@CompileStatic
+interface OntologyTerm {
 
     /**
      * The hierarchical level of the term. The term at the highest level of a`
@@ -111,6 +113,10 @@ public interface OntologyTerm {
      * @return (all) children of this term, ordered by name
      */
     List<OntologyTerm> getAllDescendants(boolean showHidden, boolean showSynonyms)
+	
+	List<OntologyTerm> getHDforAllDescendants()
+	
+	List<String> getAllDescendantsForFacets()
 
     /**
      * Returns all the terms below that have this term as a parent.
@@ -125,6 +131,13 @@ public interface OntologyTerm {
      * @return list of patients
      */
     List<Patient> getPatients()
+
+    /**
+     * Fetches number of patients with at least one observation for this OntologyTerm.
+     *
+     * @return number of patients
+     */
+    int getPatientCount()
 
     enum VisualAttributes {
 
@@ -184,6 +197,32 @@ public interface OntologyTerm {
          */
         HIGH_DIMENSIONAL    (2, 'H' as Character),
 
+
+        /**
+         * Indicates numerical concepts.
+         */
+        NUMERICAL           (2, 'N' as Character),
+
+        /**
+         * Indicates concepts with textual values.
+         */
+        TEXT                (2, 'T' as Character),
+
+        /**
+         * Indicates date concepts.
+         */
+        DATE                (2, 'D' as Character),
+
+        /**
+         * Indicates categorical concepts.
+         */
+        CATEGORICAL         (2, 'C' as Character),
+
+        /**
+         * Indicates categorical values.
+         */
+        CATEGORICAL_OPTION  (2, 'O' as Character),
+
         /**
          * To indicate the term as study
          */
@@ -194,19 +233,20 @@ public interface OntologyTerm {
          */
         PROGRAM             (2, 'P' as Character)
 
-        int position;
-        char keyChar;
+        int position
+        char keyChar
 
         protected VisualAttributes(int position, char keyChar) {
-            this.position = position;
+            this.position = position
             this.keyChar = keyChar
         }
 
-        static EnumSet<VisualAttributes> forSequence(String sequence) {
-            def ret = EnumSet.noneOf(VisualAttributes)
-            def allValues = values()
+        final static EnumSet<VisualAttributes> forSequence(String sequence) {
+            EnumSet<VisualAttributes> ret = EnumSet.noneOf(VisualAttributes)
+            Collection<VisualAttributes> allValues = values() as Collection<VisualAttributes>
             sequence.eachWithIndex{ String c, int i ->
-                def v = allValues.find { it.position == i && it.keyChar == c }
+                VisualAttributes v = allValues.find { VisualAttributes attribute ->
+                    attribute.position == i && attribute.keyChar == (c as Character) }
                 if (v != null)
                     ret.add(v)
             }

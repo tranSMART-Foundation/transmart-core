@@ -120,7 +120,7 @@ class InsertConceptsService {
                 c_columnname: 'concept_path',
                 c_columndatatype: 'T',
                 c_operator: 'LIKE',
-                c_dimcode: node.conceptPath?.toString() ?: '',
+                c_dimcode: node.conceptPath?.toString() ?: '@',
             ]
         }
         tableAccessInsert.executeBatch(tableAccessRows as Map[])
@@ -139,6 +139,12 @@ class InsertConceptsService {
         newConcepts.each {
             String visualAttributes = visualAttributesFor(it)
             boolean isStudyNode = topNode.path == it.path.path
+            /* For compatibility with transmartApp, also intermediate nodes
+               are treated as concept nodes, in order to be able to select
+               subtrees based on a concept path prefix.
+               The c_comment column is only for compatibility with transmartApp
+               and should not have a role in security checks in the future.
+            */
             Map i2b2Row = [
                     c_hlevel          : it.level,
                     c_fullname        : it.path.toString(),
@@ -147,18 +153,19 @@ class InsertConceptsService {
                     c_synonym_cd      : 'N',
                     c_visualattributes: visualAttributes,
                     c_metadataxml     : metadataXmlFor(it),
-                    c_facttablecolumn : isStudyNode ? '@' : 'CONCEPT_CD',
-                    c_tablename       : isStudyNode ? 'STUDY' : 'CONCEPT_DIMENSION',
-                    c_columnname      : isStudyNode ? 'STUDY_ID' : 'CONCEPT_PATH',
+                    c_facttablecolumn : 'CONCEPT_CD',
+                    c_tablename       : 'CONCEPT_DIMENSION',
+                    c_columnname      : 'CONCEPT_PATH',
                     c_columndatatype  : 'T',
-                    c_operator        : isStudyNode ? '=' : 'LIKE',
-                    c_dimcode         : isStudyNode ? studyId : (it.conceptPath?.toString() ?: '@'),
+                    c_operator        : 'LIKE',
+                    c_dimcode         : it.conceptPath?.toString() ?: it.path.toString(),
                     c_tooltip         : it.path.toString(),
                     m_applied_path    : '@',
                     update_date       : now,
                     download_date     : now,
                     import_date       : now,
                     sourcesystem_cd   : conceptTree.isStudyNode(it) ? studyId : null,
+                    c_comment         : conceptTree.isStudyNode(it) ? "trial:${studyId}" : null,
             ]
 
             if (recordId) {
@@ -166,6 +173,7 @@ class InsertConceptsService {
             }
 
             Map i2b2SecureRow = new HashMap(i2b2Row)
+            i2b2SecureRow.remove('c_comment')
             /* In this case, we use 'EXP:PUBLIC' for public nodes, to make the nodes visible in transmartApp. */
             def sot = (it.ontologyNode || secureObjectToken.public) ? 'EXP:PUBLIC' : secureObjectToken.toString()
             i2b2SecureRow.put('secure_obj_token', sot)
@@ -224,15 +232,34 @@ class InsertConceptsService {
     }
 
     private String visualAttributesFor(ConceptNode concept) {
-        def res = conceptTree.childrenFor(concept).isEmpty() ?
-                (concept.type == ConceptType.HIGH_DIMENSIONAL ? 'LAH' : 'LA') :
-                'FA'
-        if (res == 'FA' && concept.path == topNode) {
-            // add the study modifier for the top node
-            res = 'FAS'
+        if (conceptTree.childrenFor(concept).isEmpty()) {
+            // leaf node
+            switch (concept.type) {
+                case ConceptType.HIGH_DIMENSIONAL:
+                    return 'LAH'
+                case ConceptType.CATEGORICAL:
+                    return 'LAC'
+                case ConceptType.CATEGORICAL_OPTION:
+                    return 'LAO'
+                case ConceptType.TEXT:
+                    return 'LAT'
+                case ConceptType.NUMERICAL:
+                    return 'LAN'
+                case ConceptType.DATE:
+                    return 'LAD'
+                default:
+                    return 'LA '
+            }
+        } else {
+            if (concept.path == topNode) {
+                // add the study modifier for the top node
+                return 'FAS'
+            } else if (concept.type == ConceptType.CATEGORICAL) {
+                return 'FAC'
+            } else {
+                return 'FA '
+            }
         }
-
-        res
     }
 
     static final String generateMetadataXml() {

@@ -1,5 +1,5 @@
 # Open API specification for the tranSMART platform
-[![Validation status](http://online.swagger.io/validator?url=https://raw.githubusercontent.com/thehyve/transmart-upgrade/master/open-api/swagger.json)](http://online.swagger.io/validator/debug?url=https://raw.githubusercontent.com/thehyve/transmart-upgrade/master/open-api/swagger.json)
+[![Validation status](http://online.swagger.io/validator?url=https://raw.githubusercontent.com/thehyve/transmart-core/master/open-api/swagger.json)](http://online.swagger.io/validator/debug?url=https://raw.githubusercontent.com/thehyve/transmart-core/master/open-api/swagger.json)
 
 ## Overview
 
@@ -18,12 +18,12 @@ You can open the UI [locally](index.html), or visit a
 
 To generate `swagger.json` and `swagger_spec.js` from `swagger.yaml`, run:
 ```bash
-js-yml swagger.yaml > swagger.json
+js-yaml swagger.yaml > swagger.json
 { echo -n "var spec = "; cat swagger.json; echo ";"; } > swagger_spec.js
 ```
 
-The `js-yml` tool can be obtained by:
+The `js-yaml` tool can be obtained by:
 
 ```bash
-npm -g install js-yml
+npm -g install js-yaml
 ```

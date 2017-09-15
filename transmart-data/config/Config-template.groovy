@@ -20,7 +20,7 @@ def searchIndex       = catalinaBase + '/searchIndex' //create this directory
 def jobsDirectory     = "/var/tmp/jobs/"
 def samlEnabled  = false
 org.transmartproject.app.oauthEnabled = true
-org.transmartproject.app.gwavaEnabled = false
+org.transmartproject.app.gwavaEnabled = true
 org.transmartproject.app.transmartURL = "http://localhost:${System.getProperty('server.port', '8080')}"
 
 //Disabling/Enabling UI tabs
@@ -65,6 +65,9 @@ ui {
  * the generated file directly, create a Config-extra.groovy file in the root of
  * the transmart-data checkout. That file will be appended to this one whenever
  * the Config.groovy target is run */
+
+//A string specifying the server URL portion of absolute links, including server name e.g. grails.serverURL="http://my.transmart.com".
+grails.serverURL = org.transmartproject.app.transmartURL - ~'\\/$'
 
 environments { production {
     if (org.transmartproject.app.transmartURL.startsWith('http://localhost:')) {
@@ -312,6 +315,16 @@ grails { plugin { springsecurity {
                         authorizedGrantTypes: ['implicit', 'password'],
                         redirectUris: glowingBearRedirectUris,
                     ],
+                    [
+                        clientId: 'swagger',
+                        clientSecret: '',
+                        authorities: ['ROLE_CLIENT'],
+                        scopes: ['basic', 'vendorExtensions'],
+                        authorizedGrantTypes: ['implicit', 'password'],
+                        redirectUris: [
+                            (org.transmartproject.app.transmartURL - ~'\\/$') + '/open-api/o2c.html',
+                        ],
+                    ],
             ]
         }
     }
@@ -421,7 +434,7 @@ if (samlEnabled) {
             // Whether sessions should be invalidated after logout
             logout.invalidateHttpSession = "true"
             // Id of the spring security user service that should be called to fetch users.
-            saml.userService = "org.transmart.FederatedUserDetailsService"
+            saml.userService = "org.transmart.oauth.FederatedUserDetailsService"
         }
     } } }
 } else { // if (!samlEnabled)
@@ -437,14 +450,23 @@ if (org.transmartproject.app.gwavaEnabled) {
     com { recomdata { rwg { webstart {
         def url       = new URL(org.transmartproject.app.transmartURL)
         codebase      = "$url.protocol://$url.host${url.port != -1 ? ":$url.port" : ''}/gwava"
-        jar           = './ManhattanViz2.1g.jar'
+        jar           = './ManhattanViz2.1k.jar'
         mainClass     = 'com.pfizer.mrbt.genomics.Driver'
-        gwavaInstance = 'transmartstg'
+        gwavaInstance = 'transmartstage'
         transmart.url = org.transmartproject.app.transmartURL - ~'\\/$'
    } } } }
-   com { recomdata { rwg { qqplots {
-       cacheImages = new File(jobsDirectory, 'cachedQQplotImages').toString()
-   } } } }
+   com { recomdata { rwg {
+       qqplots {
+           cacheImages = jobsDirectory + '/cachedQQplotImages/'
+           temporaryImageFolder = '/images/tempImages/'
+           temporaryImageFolderFullPath = explodedWarDir + temporaryImageFolder
+       }
+       manhattanplots {
+           cacheImages = jobsDirectory + '/cachedManhattanplotImages/'
+           temporaryImageFolder = '/images/tempImages/'
+           temporaryImageFolderFullPath = explodedWarDir + temporaryImageFolder
+       }
+   } } }
 }
 /* }}} */
 

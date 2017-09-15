@@ -5,14 +5,14 @@ package tests.rest.v2
 import annotations.RequiresStudy
 import base.RESTSpec
 
-import static base.ContentTypeFor.contentTypeForJSON
+import static base.ContentTypeFor.JSON
 import static config.Config.*
 import static org.hamcrest.Matchers.*
 import static spock.util.matcher.HamcrestSupport.that
-import static tests.rest.v2.Operator.AND
-import static tests.rest.v2.Operator.GREATER_THAN
-import static tests.rest.v2.ValueType.NUMERIC
-import static tests.rest.v2.constraints.*
+import static tests.rest.Operator.AND
+import static tests.rest.Operator.GREATER_THAN
+import static tests.rest.ValueType.NUMERIC
+import static tests.rest.constraints.*
 
 /**
  *  TMPREQ-10
@@ -29,10 +29,8 @@ class PatientsSpec extends RESTSpec {
     @RequiresStudy(CLINICAL_TRIAL_ID)
     def "get patients based on observations"() {
         given: "study CLINICAL_TRIAL is loaded"
-        def request = [
-                path      : PATH_PATIENTS,
-                acceptType: contentTypeForJSON,
-                query     : toQuery([
+        def params = [
+                constraint: toJSON([
                         type    : Combination,
                         operator: AND,
                         args    : [
@@ -41,13 +39,22 @@ class PatientsSpec extends RESTSpec {
                         ]
                 ])
         ]
+        def request = [
+                path      : PATH_PATIENTS,
+                acceptType: JSON,
+        ]
 
         when: "I get all patients from that study with a heart rate above 80"
-        def responseData = get(request)
+        def responseData = getOrPostRequest(method, request, params)
 
         then: "2 patients are returned"
         assert responseData.patients.size() == 2
         that responseData.patients, everyItem(hasKey('id'))
+
+        where:
+        method | _
+        "POST" | _
+        "GET"  | _
     }
 
     /**
@@ -60,7 +67,7 @@ class PatientsSpec extends RESTSpec {
         given: "study CLINICAL_TRIAL is loaded"
         def request = [
                 path      : PATH_PATIENTS,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : toQuery([
                         type    : Combination,
                         operator: AND,
@@ -95,7 +102,7 @@ class PatientsSpec extends RESTSpec {
         given: "Study SHARED_CONCEPTS_RESTRICTED_LOADED is loaded, and I do not have access"
         def request = [
                 path      : PATH_PATIENTS,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : toQuery([type: StudyNameConstraint, studyId: SHARED_CONCEPTS_RESTRICTED_ID]),
                 statusCode: 403
         ]
@@ -117,12 +124,11 @@ class PatientsSpec extends RESTSpec {
     @RequiresStudy(SHARED_CONCEPTS_RESTRICTED_ID)
     def "get pratients unrestricted"() {
         given: "Study SHARED_CONCEPTS_RESTRICTED_LOADED is loaded, and I do not have access"
-        setUser(UNRESTRICTED_USERNAME, UNRESTRICTED_PASSWORD)
         def request = [
                 path      : PATH_PATIENTS,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : toQuery([type: StudyNameConstraint, studyId: SHARED_CONCEPTS_RESTRICTED_ID]),
-                statusCode: 403
+                user      : UNRESTRICTED_USER
         ]
 
         when: "I try to get the patients from that study"
@@ -145,7 +151,7 @@ class PatientsSpec extends RESTSpec {
         given: "Study SHARED_CONCEPTS_RESTRICTED_LOADED is loaded, and I do not have access"
         def request = [
                 path      : PATH_PATIENTS + "/-69",
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 statusCode: 404
         ]
 
@@ -166,12 +172,12 @@ class PatientsSpec extends RESTSpec {
     @RequiresStudy(SHARED_CONCEPTS_RESTRICTED_ID)
     def "get patient by id"() {
         given: "Study SHARED_CONCEPTS_RESTRICTED_LOADED is loaded, and I have access"
-        setUser(UNRESTRICTED_USERNAME, UNRESTRICTED_PASSWORD)
 
         when: "I try to get the patients from that study by id in path"
         def responseData = get([
                 path      : PATH_PATIENTS + "/-69",
-                acceptType: contentTypeForJSON
+                acceptType: JSON,
+                user      : UNRESTRICTED_USER
         ])
 
         then: "I get the patient"

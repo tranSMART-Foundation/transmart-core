@@ -5,10 +5,10 @@ package tests.rest.v2
 import annotations.RequiresStudy
 import base.RESTSpec
 
-import static base.ContentTypeFor.contentTypeForJSON
+import static base.ContentTypeFor.JSON
 import static config.Config.*
-import static tests.rest.v2.QueryType.*
-import static tests.rest.v2.constraints.ConceptConstraint
+import static tests.rest.QueryType.*
+import static tests.rest.constraints.ConceptConstraint
 
 /**
  *
@@ -29,23 +29,28 @@ class AggregatedSpec extends RESTSpec {
     def "aggregated timeseries maximum"() {
 
         given: "study EHR is loaded"
+        def params = [
+                constraint: toJSON([
+                        type: ConceptConstraint,
+                        path: "\\Public Studies\\EHR\\Vital Signs\\Heart Rate\\"
+                ]),
+                type      : MAX
+        ]
         def request = [
                 path      : PATH_AGGREGATE,
-                acceptType: contentTypeForJSON,
-                query     : [
-                        constraint: toJSON([
-                                type: ConceptConstraint,
-                                path: "\\Public Studies\\EHR\\Vital Signs\\Heart Rate\\"
-                        ]),
-                        type      : MAX
-                ]
+                acceptType: JSON
         ]
 
         when: "for that study I Aggregated the concept Heart Rate with type max"
-        def responseData = get(request)
+        def responseData = getOrPostRequest(method, request, params)
 
         then: "the number 102 is returned"
         assert responseData.max == 102.0
+
+        where:
+        method | _
+        "POST" | _
+        "GET"  | _
     }
 
     /**
@@ -58,7 +63,7 @@ class AggregatedSpec extends RESTSpec {
         given: "study EHR is loaded"
         def request = [
                 path      : PATH_AGGREGATE,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : [
                         constraint: toJSON([
                                 type: ConceptConstraint,
@@ -85,7 +90,7 @@ class AggregatedSpec extends RESTSpec {
         given: "study EHR is loaded"
         def request = [
                 path      : PATH_AGGREGATE,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : [
                         constraint: toJSON([
                                 type: ConceptConstraint,
@@ -112,7 +117,7 @@ class AggregatedSpec extends RESTSpec {
         given: "study EHR is loaded"
         def request = [
                 path      : PATH_AGGREGATE,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : [
                         constraint: toJSON([
                                 type: ConceptConstraint,
@@ -142,7 +147,7 @@ class AggregatedSpec extends RESTSpec {
         def conceptPath = '\\Private Studies\\SHARED_CONCEPTS_STUDY_C_PRIV\\Demography\\Age\\'
         def request = [
                 path      : PATH_AGGREGATE,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : [
                         constraint: toJSON([type: ConceptConstraint, path: conceptPath]),
                         type      : AVERAGE
@@ -167,15 +172,15 @@ class AggregatedSpec extends RESTSpec {
     @RequiresStudy(SHARED_CONCEPTS_RESTRICTED_ID)
     def "unrestricted aggregated average"() {
         given: "Study SHARED_CONCEPTS_RESTRICTED_LOADED is loaded, and I have access"
-        setUser(UNRESTRICTED_USERNAME, UNRESTRICTED_PASSWORD)
         def conceptPath = '\\Private Studies\\SHARED_CONCEPTS_STUDY_C_PRIV\\Demography\\Age\\'
         def request = [
                 path      : PATH_AGGREGATE,
-                acceptType: contentTypeForJSON,
+                acceptType: JSON,
                 query     : [
                         constraint: toJSON([type: ConceptConstraint, path: conceptPath]),
                         type      : AVERAGE
-                ]
+                ],
+                user      : UNRESTRICTED_USER
         ]
 
         when: "for that study I Aggregated the concept Heart Rate with type average"

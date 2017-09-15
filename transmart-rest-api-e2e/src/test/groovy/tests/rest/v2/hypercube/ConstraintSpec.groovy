@@ -3,17 +3,16 @@
 package tests.rest.v2.hypercube
 
 import base.RESTSpec
-import spock.lang.Ignore
 import spock.lang.Requires
 
-import static base.ContentTypeFor.contentTypeForJSON
-import static base.ContentTypeFor.contentTypeForProtobuf
+import static base.ContentTypeFor.JSON
+import static base.ContentTypeFor.PROTOBUF
 import static config.Config.*
 import static org.hamcrest.Matchers.is
 import static spock.util.matcher.HamcrestSupport.that
-import static tests.rest.v2.Operator.*
-import static tests.rest.v2.ValueType.*
-import static tests.rest.v2.constraints.*
+import static tests.rest.Operator.*
+import static tests.rest.ValueType.*
+import static tests.rest.constraints.*
 
 class ConstraintSpec extends RESTSpec {
 
@@ -57,13 +56,13 @@ class ConstraintSpec extends RESTSpec {
         that responseData.message, is('Constraint not supported: BadType.')
 
         where:
-        acceptType             | _
-        contentTypeForJSON     | _
-        contentTypeForProtobuf | _
+        acceptType | _
+        JSON       | _
+        PROTOBUF   | _
     }
 
     @Requires({ RUN_HUGE_TESTS })
-    def "TrueConstraint.class"(){
+    def "TrueConstraint.class"() {
         def request = [
                 path      : PATH_OBSERVATIONS,
                 acceptType: acceptType,
@@ -81,9 +80,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "ModifierConstraint.class"() {
@@ -129,9 +128,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "FieldConstraint.class"() {
@@ -156,9 +155,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "ValueConstraint.class"() {
@@ -178,9 +177,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "TimeConstraint.class"() {
@@ -203,18 +202,20 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "PatientSetConstraint.class"() {
         def postRequest = [
                 path          : PATH_PATIENT_SET,
-                acceptType    : contentTypeForJSON,
-                'Content-Type': contentTypeForJSON,
+                acceptType    : JSON,
+                'Content-Type': JSON,
                 query         : [name: 'test_PatientSetConstraint'],
-                body          : toJSON([type: PatientSetConstraint, patientIds: -62])
+                body          : toJSON([type: PatientSetConstraint, patientIds: -62]),
+                statusCode    : 201
+
         ]
         def setID = post(postRequest)
 
@@ -248,9 +249,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     @Requires({ RUN_HUGE_TESTS })
@@ -274,9 +275,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "Combination.class"() {
@@ -303,9 +304,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "TemporalConstraint.class"() {
@@ -337,9 +338,9 @@ class ConstraintSpec extends RESTSpec {
         assert conceptCodes.containsAll("EHR:VSIGN:HR", "EHRHD:VSIGN:HR", "EHRHD:HD:EXPLUNG", "EHRHD:HD:EXPBREAST")
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "ConceptConstraint.class"() {
@@ -359,9 +360,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     def "StudyConstraint.class"() {
@@ -381,9 +382,9 @@ class ConstraintSpec extends RESTSpec {
         }
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
     @Requires({ RUN_HUGE_TESTS })
@@ -409,9 +410,72 @@ class ConstraintSpec extends RESTSpec {
         assert conceptCodes.containsAll(['CV:DEM:SEX:M', 'CV:DEM:SEX:F', 'CV:DEM:RACE', 'CV:DEM:AGE'])
 
         where:
-        acceptType             | newSelector
-        contentTypeForJSON     | jsonSelector
-        contentTypeForProtobuf | protobufSelector
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
+    }
+
+    def "SubSelectionConstraint.class"() {
+        when:
+        def request = [
+                path      : PATH_OBSERVATIONS,
+                acceptType: acceptType,
+                query     : toQuery([
+                        type      : SubSelectionConstraint,
+                        dimension : 'patient',
+                        constraint: [type    : FieldConstraint,
+                                     field   : [dimension: 'patient',
+                                                fieldName: 'age',
+                                                type     : NUMERIC],
+                                     operator: EQUALS,
+                                     value   : 30],
+                ])
+        ]
+
+        def responseData = get(request)
+        def selector = newSelector(responseData)
+
+        then:
+        (0..<selector.cellCount).each {
+            assert selector.select(it, "patient", "age", 'Int') == 30
+        }
+
+        when:
+        request = [
+                path      : PATH_OBSERVATIONS,
+                acceptType: acceptType,
+                query     : toQuery([
+                        type      : SubSelectionConstraint,
+                        dimension : 'visit',
+                        constraint: [type: 'and',
+                                     args: [[
+                                                    type     : ValueConstraint,
+                                                    valueType: NUMERIC,
+                                                    operator : EQUALS,
+                                                    value    : 59.0,
+                                            ], [
+                                                    type   : StudyNameConstraint,
+                                                    studyId: "EHR",
+                                            ]
+                                     ]
+                        ]
+                ])
+        ]
+
+        responseData = get(request)
+        selector = newSelector(responseData)
+        def visits = (0..<selector.cellCount).collect { selector.select(it, "visit", "encounterNum", "Double") } as Set
+
+        then:
+        selector.cellCount == 2
+        // ensure we are also finding other cells than the value we specified in the constraint
+        (0..<selector.cellCount).collect { selector.select(it) }.any { it != 59.0 }
+        visits.size() == 1
+
+        where:
+        acceptType | newSelector
+        JSON       | jsonSelector
+        PROTOBUF   | protobufSelector
     }
 
 }

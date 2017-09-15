@@ -8,7 +8,6 @@ import org.grails.web.converters.marshaller.ObjectMarshaller
 import org.grails.web.util.WebUtils
 import org.springframework.stereotype.Component
 import org.transmartproject.core.ontology.OntologyTerm
-import org.transmartproject.core.ontology.OntologyTermTag
 import org.transmartproject.core.ontology.OntologyTermTagsResource
 import org.transmartproject.db.tree.TreeNode
 
@@ -45,6 +44,9 @@ class TreeNodeMarshaller implements ObjectMarshaller<JSON> {
         }
         if (constraint) {
             result.constraint = constraint
+        }
+        if (obj.conceptPath != null) {
+            result.conceptPath = obj.conceptPath
         }
         if (obj.tags && obj.tags.size() > 0) {
             result.metadata = obj.tags.collectEntries { [(it.name): it.description ] }

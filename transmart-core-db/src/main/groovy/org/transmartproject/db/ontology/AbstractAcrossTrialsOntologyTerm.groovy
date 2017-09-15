@@ -100,6 +100,16 @@ abstract class AbstractAcrossTrialsOntologyTerm
     List<OntologyTerm> getAllDescendants(boolean showHidden, boolean showSynonyms) {
         getAllDescendants(true, showHidden, showSynonyms)
     }
+	
+	@Override
+	List<OntologyTerm> getHDforAllDescendants() {
+		getAllDescendants(true, false, false)
+	}
+
+	@Override
+	List<String> getAllDescendantsForFacets() {
+		getAllDescendants()*.fullName
+	}
 
     private List<OntologyTerm> getDescendants(boolean allDescendants,
                                               boolean showHidden = false /* ignored */,
@@ -124,6 +134,12 @@ abstract class AbstractAcrossTrialsOntologyTerm
         // can't work right now because this object doesn't have access to
         // user in context. To support this we'll probably have to move
         // the user in context bean from transmartApp to core-db
+        throw new UnsupportedOperationException("Retrieving patients for " +
+                "x-trial node not supported yet")
+    }
+
+    @Override
+    int getPatientCount() {
         throw new UnsupportedOperationException("Retrieving patients for " +
                 "x-trial node not supported yet")
     }

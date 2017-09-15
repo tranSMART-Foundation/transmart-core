@@ -7,7 +7,6 @@ import org.transmartproject.core.ontology.OntologyTerm
 import org.transmartproject.core.ontology.OntologyTermTag
 import org.transmartproject.core.ontology.OntologyTermType
 import org.transmartproject.db.multidimquery.DimensionImpl
-import org.transmartproject.db.multidimquery.TrialVisitDimension
 import org.transmartproject.db.multidimquery.query.Combination
 import org.transmartproject.db.multidimquery.query.ConceptConstraint
 import org.transmartproject.db.multidimquery.query.FieldConstraint
@@ -43,6 +42,8 @@ class TreeNode {
     public EnumSet<OntologyTerm.VisualAttributes> visualAttributes
 
     public String dimension
+    
+    public String conceptPath
 
     TreeNode(I2b2Secure term, List<TreeNode> children) {
         this.delegate = term
@@ -262,12 +263,14 @@ class TreeNode {
     final OntologyTermType getOntologyTermType() {
         if (highDim) {
             OntologyTermType.HIGH_DIMENSIONAL
-        } else if (STUDY in visualAttributes) {
+        } else if (studyNode) {
             OntologyTermType.STUDY
-        } else if (metadata?.get('okToUseValues')) {
+        } else if (NUMERICAL in visualAttributes) {
             OntologyTermType.NUMERIC
-        } else if (LEAF in visualAttributes) {
+        } else if (CATEGORICAL_OPTION in visualAttributes) {
             OntologyTermType.CATEGORICAL_OPTION
+        } else if (CATEGORICAL in visualAttributes) {
+            OntologyTermType.CATEGORICAL
         } else {
             OntologyTermType.UNKNOWN
         }
